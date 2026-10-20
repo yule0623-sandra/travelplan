@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Travel Journal ｜ 旅途，慢慢記錄</title>
+  <!-- 載入極速高倍率資料壓縮庫 (LZ-String) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <style>
     :root {
       --wabi-bg: #f5f2eb;
@@ -148,7 +150,7 @@
         <button class="secondary" id="back-to-folders-btn" type="button" style="padding: 6px 14px; font-size: 13px;">⬅️ 返回行程庫存</button>
         <div class="header-actions-group">
           <button class="secondary" id="export-pdf-btn" type="button" style="padding: 6px 12px; font-size: 12px;">📄 匯出 PDF</button>
-          <button class="accent-btn" id="export-code-btn" type="button" style="padding: 6px 12px; font-size: 12px;">📤 匯出分享連結/碼</button>
+          <button class="accent-btn" id="export-code-btn" type="button" style="padding: 6px 12px; font-size: 12px;">📤 匯出短網址/分享碼</button>
           <span class="user-badge" id="detail-user-display">使用者</span>
         </div>
       </div>
@@ -337,7 +339,7 @@
         searchInput.addEventListener('input', (e) => { if (!isComposing) renderItineraries(e.target.value); });
       }
 
-      // 檢查網址是否帶有分享參數 (URL Hash 自動匯入)
+      // 檢查網址是否帶有極短壓縮分享碼
       checkUrlAutoImport();
 
       if (currentUser && currentUser.trim() !== '') {
@@ -483,36 +485,47 @@
       }
     }
 
-    // GitHub/Netlify 純內部 100% 成功一鍵分享 (免任何外部網路 API)
+    // 使用 LZ-String 高倍率演算法壓縮資料，生成短網址/短碼
     function exportTripCode() {
       try {
         const jsonStr = JSON.stringify(currentTripData);
-        // 使用安全編碼將 JSON 轉為 URL 安全字串
-        const encodedData = encodeURIComponent(jsonStr);
+        // 使用 URI 安全的演算法進行高倍率壓縮
+        const compressedCode = LZString.compressToEncodedURIComponent(jsonStr);
         const baseUrl = window.location.origin + window.location.pathname;
-        const shareUrl = `${baseUrl}#share=${encodedData}`;
+        const shareUrl = `${baseUrl}#s=${compressedCode}`;
 
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(shareUrl).then(() => {
-            alert('✨ 行程分享專屬連結已自動複製到剪貼簿！\n您可以直接貼上發送給好友，好友點開連結即可自動載入！');
+            alert('✨ 行程分享短網址已自動複製到剪貼簿！\n您可以直接貼上發送給好友，點開即可自動匯入。');
           }).catch(() => {
-            prompt('請複製以下專屬分享連結傳給好友：', shareUrl);
+            prompt('請複製以下精簡分享網址傳給好友：', shareUrl);
           });
         } else {
-          prompt('請複製以下專屬分享連結傳給好友：', shareUrl);
+          prompt('請複製以下精簡分享網址傳給好友：', shareUrl);
         }
       } catch (err) {
-        alert('匯出分享連結失敗！');
+        alert('匯出短網址失敗！');
       }
     }
 
-    // 檢查 URL Hash 自動匯入好友行程
+    // 自動讀取並解壓縮網址上的短碼
     function checkUrlAutoImport() {
       const hash = window.location.hash;
-      if (hash && hash.includes('#share=')) {
+      if (hash && (hash.includes('#s=') || hash.includes('#share='))) {
         try {
-          const rawData = hash.replace('#share=', '');
-          const importedTrip = JSON.parse(decodeURIComponent(rawData));
+          let code = '';
+          if (hash.includes('#s=')) {
+            code = hash.split('#s=')[1];
+          } else {
+            code = hash.split('#share=')[1];
+          }
+
+          let jsonStr = LZString.decompressFromEncodedURIComponent(code);
+          if (!jsonStr) {
+            jsonStr = decodeURIComponent(code);
+          }
+
+          const importedTrip = JSON.parse(jsonStr);
 
           if (importedTrip && importedTrip.destination) {
             if (!currentUser) {
@@ -535,22 +548,30 @@
             loadTripDetail(importedTrip.id);
           }
         } catch(e) {
-          console.log('網址分享碼讀取失敗');
+          console.log('短網址讀取失敗');
         }
       }
     }
 
-    // 手動貼上分享連結或分享碼匯入
+    // 手動貼上短網址或壓縮碼匯入
     function importTripByCode() {
-      const input = prompt('請貼上好友傳給您的行程分享連結（或分享碼）：');
+      const input = prompt('請貼上好友傳給您的行程分享短網址（或分享碼）：');
       if (!input || !input.trim()) return;
 
       try {
         let rawData = input.trim();
-        if (rawData.includes('#share=')) {
+        if (rawData.includes('#s=')) {
+          rawData = rawData.split('#s=')[1];
+        } else if (rawData.includes('#share=')) {
           rawData = rawData.split('#share=')[1];
         }
-        const importedTrip = JSON.parse(decodeURIComponent(rawData));
+
+        let jsonStr = LZString.decompressFromEncodedURIComponent(rawData);
+        if (!jsonStr) {
+          jsonStr = decodeURIComponent(rawData);
+        }
+
+        const importedTrip = JSON.parse(jsonStr);
         
         if (importedTrip && importedTrip.destination) {
           importedTrip.id = 'trip_' + Date.now();
@@ -564,7 +585,7 @@
           throw new Error('Invalid format');
         }
       } catch (err) {
-        alert('⚠️ 連結或分享碼格式無效，請確認是否完整複製！');
+        alert('⚠️ 短網址或分享碼格式無效，請確認是否完整複製！');
       }
     }
 
