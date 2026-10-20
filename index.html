@@ -480,7 +480,7 @@
       }
     }
 
-    // 真正的 8 位數極簡分享碼 (免費公用 API 儲存通道)
+    // 100% 免 API 金鑰的 8 位數極簡分享碼上傳 (使用 dpaste 開放通道)
     async function exportTripCode() {
       const btn = document.getElementById('export-code-btn');
       const originalText = btn.innerText;
@@ -488,69 +488,58 @@
       btn.disabled = true;
 
       try {
-        const response = await fetch('https://api.jsonbin.io/v3/b', {
+        const payload = new URLSearchParams();
+        payload.append('content', JSON.stringify(currentTripData));
+        payload.append('expiry_days', '365');
+        payload.append('syntax', 'json');
+
+        const response = await fetch('https://dpaste.org/api/', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Bin-Private': 'false'
-          },
-          body: JSON.stringify(currentTripData)
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: payload
         });
-        const result = await response.json();
+
+        const urlResult = await response.text();
+        const cleanUrl = urlResult.trim();
         
-        if (result && result.metadata && result.metadata.id) {
-          // 擷取 JSONBin 的後 8 位英數字作為專屬分享碼
-          const fullId = result.metadata.id;
-          const shortCode = fullId.substring(fullId.length - 8).toUpperCase();
+        // 從產出的網址中截取後 8 位英數字作為專屬短碼（例如：K7X9P2Q4）
+        const urlParts = cleanUrl.split('/');
+        const rawCode = urlParts[urlParts.length - 1] || urlParts[urlParts.length - 2];
+        const shortCode = rawCode.substring(0, 8).toUpperCase();
 
-          // 儲存短碼對應關係至 localStorage 讓本機快速對應
-          localStorage.setItem(`shortcode_${shortCode}`, fullId);
-
+        if (shortCode && shortCode.length > 0) {
+          // 自動複製到剪貼簿
           if (navigator.clipboard) {
             await navigator.clipboard.writeText(shortCode);
-            alert(`✨ 8位數分享碼：【 ${shortCode} 】\n已自動複製到剪貼簿！傳送給好友即可直接匯入。`);
+            alert(`✨ 您的 8 位數分享碼：【 ${shortCode} 】\n\n已自動複製到剪貼簿！傳送給好友即可直接匯入。`);
           } else {
             prompt('您的 8 位數分享碼如下（請複製）：', shortCode);
           }
         } else {
-          throw new Error('Upload failed');
+          throw new Error('Code generation failed');
         }
       } catch (err) {
-        alert('上傳網路分享碼失敗，請檢查網路連線或重試！');
+        alert('網路分享上傳失敗，請確認網路連線正常！');
       } finally {
         btn.innerText = originalText;
         btn.disabled = false;
       }
     }
 
-    // 8 位數分享碼一鍵下載與匯入
+    // 輸入 8 位數分享碼下載並同步行程
     async function importTripByCode() {
       const codeInput = prompt('請輸入好友分享給您的 8 位數分享碼：');
       if (!codeInput || !codeInput.trim()) return;
 
-      const code = codeInput.trim().toUpperCase();
-      let fullId = localStorage.getItem(`shortcode_${code}`);
-
-      // 若本機快取無完整 ID，則嘗試進行全網匹配搜尋
-      if (!fullId) {
-        // 直接對 API 通道進行解析
-        fullId = code; 
-      }
-
+      const code = codeInput.trim().toLowerCase();
       try {
-        let fetchUrl = `https://api.jsonbin.io/v3/b/${fullId}`;
-        let res = await fetch(fetchUrl);
-        if (!res.ok) {
-          // 嘗試小寫通道匹配
-          fetchUrl = `https://api.jsonbin.io/v3/b/${code.toLowerCase()}`;
-          res = await fetch(fetchUrl);
-        }
+        // 從雲端開放通道下載行程 JSON
+        const response = await fetch(`https://dpaste.org/${code}/raw`);
+        if (!response.ok) throw new Error('Not found');
 
-        if (!res.ok) throw new Error('Not found');
-        const data = await res.json();
+        const importedTrip = await response.json();
         
-        if (data && data.record) {
-          const importedTrip = data.record;
+        if (importedTrip && importedTrip.destination) {
           importedTrip.id = 'trip_' + Date.now();
           importedTrip.title = (importedTrip.destination || '好友') + '行程 (匯入檔)';
           
