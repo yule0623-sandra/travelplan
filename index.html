@@ -38,7 +38,6 @@
     }
     .brand-title { font-family: Georgia, serif; font-size: 18px; letter-spacing: 1.5px; line-height: 1.2; }
     
-    /* 頂部按鈕水平對齊排版 */
     .header-bar-align {
       display: flex;
       align-items: center;
@@ -253,6 +252,11 @@
       </div>
 
       <div style="margin-bottom: 12px;">
+        <label>詳細地址（選填，可用於一鍵導航）</label>
+        <input type="text" id="item-address" placeholder="例如：高雄市三民區海中街16號">
+      </div>
+
+      <div style="margin-bottom: 12px;">
         <label>文字行程 / 備註描述（若空白自動隱藏）</label>
         <textarea id="item-desc" placeholder="例如：品嚐人氣抹茶甜點，欣賞日式庭園建築"></textarea>
       </div>
@@ -264,7 +268,7 @@
 
       <div style="margin-bottom: 12px;">
         <label>備忘欄（自行填寫，若空白自動隱藏）</label>
-        <input type="text" id="item-memo" placeholder="例如：記得提前預約、攜帶門票憑證">
+        <input type="text" id="item-memo" placeholder="例如：預訂 0909611077">
       </div>
 
       <div style="margin-bottom: 24px;">
@@ -280,13 +284,12 @@
   </div>
 
   <script>
-    // 常見地點資料庫 (自動帶入營業時間與推薦)
     const placePresets = {
       '清水寺': { hours: '06:00 - 18:00', recommend: '音羽之瀧、產寧坂阿闍梨餅、生八橋' },
       '伏見稻荷大社': { hours: '24 小時開放', recommend: '千本鳥居、狐狸繪馬、御守' },
       '淺草寺': { hours: '06:00 - 17:00', recommend: '人形燒、雷門燈籠、花月堂菠蘿麵包' },
       '築地市場': { hours: '05:00 - 14:00 (週日/週三公休)', recommend: '玉子燒、海鮮丼、炙燒壽司' },
-      '老爹蔬食': { hours: '11:00 - 20:00 (週一公休)', recommend: '預定麵線糊、肉燥飯' },
+      '老爹蔬食': { hours: '11:30 - 20:00 (週一公休)', recommend: '預定麵線糊、肉燥飯' },
       '駁二藝術特區': { hours: '10:00 - 18:00', recommend: '微熱山丘鳳梨酥、手作市集' },
       '六合夜市': { hours: '17:00 - 00:00', recommend: '木瓜牛奶、海鮮粥、海產燒烤' }
     };
@@ -329,7 +332,6 @@
       const exportCode = document.getElementById('export-code-btn');
       if (exportCode) exportCode.onclick = exportTripCode;
 
-      // 當輸入地點名稱時自動帶入預設營業時間與推薦
       const itemTitleInput = document.getElementById('item-title');
       if (itemTitleInput) {
         itemTitleInput.oninput = (e) => {
@@ -635,9 +637,12 @@
         div.className = 'itinerary-item';
         
         const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
-        const simulatedAddress = `地址：${item.title} 附近熱門商圈`;
+        
+        // 地址邏輯：若有輸入自訂地址用自訂地址，否則呈現地點名稱，完全去除「附近熱門商圈」字樣
+        const displayAddress = item.address ? item.address : item.title;
         const displayHours = item.hours ? `營業時間：${item.hours}` : `營業時間：09:00 - 18:00`;
-        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title)}`;
+        const mapSearchQuery = item.address ? item.address : item.title;
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchQuery)}`;
 
         const hasContent = item.desc || isPlace || item.recommend || item.memo || item.hours;
 
@@ -662,7 +667,7 @@
               ${isPlace ? `
                 <div class="location-info-meta">
                   <span>⏱ ${displayHours}</span>
-                  <span>📍 <a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${simulatedAddress} (點擊一鍵導航)</a></span>
+                  <span>📍 地址：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress} (點擊一鍵導航)</a></span>
                 </div>
               ` : ''}
 
@@ -717,6 +722,7 @@
       document.getElementById('item-link').value = '';
       document.getElementById('item-title').value = '';
       document.getElementById('item-hours').value = '';
+      document.getElementById('item-address').value = '';
       document.getElementById('item-desc').value = '';
       document.getElementById('item-recommend').value = '';
       document.getElementById('item-memo').value = '';
@@ -733,6 +739,7 @@
       document.getElementById('item-link').value = item.link || '';
       document.getElementById('item-title').value = item.title || '';
       document.getElementById('item-hours').value = item.hours || '';
+      document.getElementById('item-address').value = item.address || '';
       document.getElementById('item-desc').value = item.desc || '';
       document.getElementById('item-recommend').value = item.recommend || '';
       document.getElementById('item-memo').value = item.memo || '';
@@ -750,6 +757,7 @@
       const link = document.getElementById('item-link').value;
       const title = document.getElementById('item-title').value;
       const hours = document.getElementById('item-hours').value;
+      const address = document.getElementById('item-address').value;
       const desc = document.getElementById('item-desc').value;
       const recommend = document.getElementById('item-recommend').value;
       const memo = document.getElementById('item-memo').value;
@@ -763,7 +771,7 @@
       const dayKey = `day_${currentDay}`;
       if (!currentTripData.itineraries[dayKey]) currentTripData.itineraries[dayKey] = [];
 
-      const itemData = { time, link, title, hours, desc, recommend, memo, image };
+      const itemData = { time, link, title, hours, address, desc, recommend, memo, image };
 
       if (index === -1) {
         currentTripData.itineraries[dayKey].push(itemData);
