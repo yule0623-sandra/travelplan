@@ -68,8 +68,8 @@
   <div id="login-screen">
     <h2>🔐 個人行程帳號登入</h2>
     <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">輸入您的專屬名稱以建立或載入雲端記憶行程</p>
-    <input type="text" id="username-input" placeholder="例如：Cassandra">
-    <button onclick="handleLogin()" style="width: 100%;">進入我的旅程</button>
+    <input type="text" id="username-input" placeholder="例如：Cassandra" value="Cassandra">
+    <button id="login-btn" style="width: 100%;">進入我的旅程</button>
   </div>
 
   <!-- 主應用介面 -->
@@ -81,7 +81,7 @@
       </div>
       <div>
         <span class="user-badge" id="current-user-display">使用者</span>
-        <button class="secondary" onclick="handleLogout()" style="margin-left: 10px; padding: 4px 10px; font-size: 12px;">切換帳號</button>
+        <button class="secondary" id="logout-btn" style="margin-left: 10px; padding: 4px 10px; font-size: 12px;">切換帳號</button>
       </div>
     </header>
 
@@ -91,18 +91,18 @@
       <div class="grid-2">
         <div>
           <label>旅遊地點 / 國家</label>
-          <input type="text" id="trip-destination" placeholder="例如：日本東京 或 地中海郵輪" onchange="saveAppData()">
+          <input type="text" id="trip-destination" placeholder="例如：日本東京 或 地中海郵輪">
         </div>
         <div>
           <label>旅遊天數設定 (天)</label>
-          <input type="number" id="trip-days" min="1" value="3" onchange="updateTripDaysConfig(); saveAppData();">
+          <input type="number" id="trip-days" min="1" value="3">
         </div>
       </div>
       
       <!-- 國外旅遊加開航班/郵輪選項 -->
       <div style="margin-top: 10px;">
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" id="is-international" onchange="toggleInternationalFields(); saveAppData();" style="width: auto;"> 
+          <input type="checkbox" id="is-international" style="width: auto;"> 
           這是國外旅遊（需加註航班或郵輪資訊）
         </label>
       </div>
@@ -111,14 +111,14 @@
         <div class="grid-2">
           <div>
             <label>交通工具類型</label>
-            <select id="transport-type" onchange="saveAppData()">
+            <select id="transport-type">
               <option value="flight">✈️ 航班資訊</option>
               <option value="cruise">🚢 郵輪資訊</option>
             </select>
           </div>
           <div>
             <label>編號 / 航次與時間</label>
-            <input type="text" id="transport-detail" placeholder="例如: CI-102 / 麗星郵輪 14:00 發航" onchange="saveAppData()">
+            <input type="text" id="transport-detail" placeholder="例如: CI-102 / 麗星郵輪 14:00 發航">
           </div>
         </div>
       </div>
@@ -128,24 +128,18 @@
     <div class="card">
       <h3 style="margin-bottom: 15px;">📅 每日行程與 Google Maps 已儲存地點</h3>
       
-      <!-- 搜尋列 -->
       <div class="toolbar">
         <input type="text" id="search-input" placeholder="🔍 搜尋行程或 Google Maps 已儲存地點...">
-        <button onclick="openAddModal()">＋ 新增行程</button>
+        <button id="add-item-btn">＋ 新增行程</button>
       </div>
 
-      <!-- 天數頁籤導覽 -->
       <div class="day-tabs" id="day-tabs-container"></div>
-
-      <!-- 當前天數行程清單 -->
-      <div id="itinerary-list">
-        <!-- 動態載入行程 -->
-      </div>
+      <div id="itinerary-list"></div>
     </div>
   </div>
 
   <!-- 新增/編輯行程互動小視窗 -->
-  <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); justify-content:center; align-items:center;">
+  <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); justify-content:center; align-items:center; z-index:999;">
     <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:450px;">
       <h3 id="modal-title" style="margin-bottom: 15px;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
@@ -154,7 +148,7 @@
         <input type="text" id="item-time" placeholder="例如: 10:00 AM">
       </div>
       <div style="margin-bottom: 12px;">
-        <label>行程標題 / 地點 (可結合 Google Maps 已儲存地點名稱)</label>
+        <label>行程標題 / 地點</label>
         <input type="text" id="item-title" placeholder="例如: 淺草寺雷門">
       </div>
       <div style="margin-bottom: 15px;">
@@ -162,8 +156,8 @@
         <input type="text" id="item-desc" placeholder="例如: 租借和服、品嚐雷門人形燒">
       </div>
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button class="secondary" onclick="closeModal()">取消</button>
-        <button onclick="saveItineraryItem()">儲存行程</button>
+        <button class="secondary" id="modal-cancel-btn">取消</button>
+        <button id="modal-save-btn">儲存行程</button>
       </div>
     </div>
   </div>
@@ -180,18 +174,44 @@
       itineraries: {} 
     };
 
-    if (currentUser) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app-screen').style.display = 'block';
-      document.getElementById('current-user-display').innerText = currentUser;
-      loadAppData();
-    }
+    window.addEventListener('DOMContentLoaded', () => {
+      // 綁定登入與登出
+      document.getElementById('login-btn').addEventListener('click', handleLogin);
+      document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+      // 綁定設定即時儲存
+      document.getElementById('trip-destination').addEventListener('input', saveAppData);
+      document.getElementById('trip-days').addEventListener('input', () => { updateTripDaysConfig(); saveAppData(); });
+      document.getElementById('is-international').addEventListener('change', () => { toggleInternationalFields(); saveAppData(); });
+      document.getElementById('transport-type').addEventListener('change', saveAppData);
+      document.getElementById('transport-detail').addEventListener('input', saveAppData);
+
+      // 綁定按鈕與互動視窗
+      document.getElementById('add-item-btn').addEventListener('click', openAddModal);
+      document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+      document.getElementById('modal-save-btn').addEventListener('click', saveItineraryItem);
+
+      // 搜尋注音防呆綁定
+      let isComposing = false;
+      const searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('compositionstart', () => { isComposing = true; });
+      searchInput.addEventListener('compositionend', (e) => { isComposing = false; renderItineraries(e.target.value); });
+      searchInput.addEventListener('input', (e) => { if (!isComposing) renderItineraries(e.target.value); });
+
+      if (currentUser) {
+        initAppScreen();
+      }
+    });
 
     function handleLogin() {
       const input = document.getElementById('username-input').value.trim();
       if (!input) return alert('請輸入您的帳號名稱');
       currentUser = input;
       localStorage.setItem('current_user', currentUser);
+      initAppScreen();
+    }
+
+    function initAppScreen() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
       document.getElementById('current-user-display').innerText = currentUser;
@@ -217,12 +237,14 @@
     function loadAppData() {
       const saved = localStorage.getItem(`travel_app_data_${currentUser}`);
       if (saved) {
-        appData = JSON.parse(saved);
-        document.getElementById('trip-destination').value = appData.destination || '';
-        document.getElementById('trip-days').value = appData.days || 3;
-        document.getElementById('is-international').checked = !!appData.isInternational;
-        document.getElementById('transport-type').value = appData.transportType || 'flight';
-        document.getElementById('transport-detail').value = appData.transportDetail || '';
+        try {
+          appData = JSON.parse(saved);
+          document.getElementById('trip-destination').value = appData.destination || '';
+          document.getElementById('trip-days').value = appData.days || 3;
+          document.getElementById('is-international').checked = !!appData.isInternational;
+          document.getElementById('transport-type').value = appData.transportType || 'flight';
+          document.getElementById('transport-detail').value = appData.transportDetail || '';
+        } catch(e) {}
       }
       toggleInternationalFields();
       updateTripDaysConfig();
@@ -230,4 +252,153 @@
     }
 
     function toggleInternationalFields() {
-      const isChecked = document.getElementById('is-internatio
+      const isChecked = document.getElementById('is-international').checked;
+      document.getElementById('transport-section').style.display = isChecked ? 'block' : 'none';
+    }
+
+    function updateTripDaysConfig() {
+      const totalDays = parseInt(document.getElementById('trip-days').value) || 1;
+      const container = document.getElementById('day-tabs-container');
+      container.innerHTML = '';
+      
+      if (currentDay > totalDays) currentDay = 1;
+
+      for (let i = 1; i <= totalDays; i++) {
+        const btn = document.createElement('button');
+        btn.className = `day-tab ${i === currentDay ? 'active' : ''}`;
+        btn.innerText = `第 ${i} 日`;
+        btn.addEventListener('click', () => {
+          currentDay = i;
+          updateTripDaysConfig();
+          renderItineraries();
+        });
+        container.appendChild(btn);
+      }
+      renderItineraries();
+    }
+
+    function renderItineraries(filterKeyword = '') {
+      const listContainer = document.getElementById('itinerary-list');
+      listContainer.innerHTML = '';
+      
+      const dayKey = `day_${currentDay}`;
+      if (!appData.itineraries[dayKey]) {
+        appData.itineraries[dayKey] = [];
+      }
+
+      const items = appData.itineraries[dayKey];
+      const filtered = items.filter(item => 
+        item.title.toLowerCase().includes(filterKeyword.toLowerCase()) || 
+        item.desc.toLowerCase().includes(filterKeyword.toLowerCase()) ||
+        item.time.toLowerCase().includes(filterKeyword.toLowerCase())
+      );
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding: 20px;">尚無行程紀錄，點擊上方「＋ 新增行程」開始規劃！</p>`;
+        return;
+      }
+
+      filtered.forEach((item) => {
+        const realIndex = items.indexOf(item);
+        const div = document.createElement('div');
+        div.className = 'itinerary-item';
+        div.innerHTML = `
+          <div class="itinerary-info">
+            <h4>🕒 ${item.time} － ${item.title}</h4>
+            <p>${item.desc}</p>
+          </div>
+          <div class="item-actions">
+            <button class="secondary move-up-btn" data-index="${realIndex}">⬆️</button>
+            <button class="secondary move-down-btn" data-index="${realIndex}">⬇️</button>
+            <button class="secondary edit-btn" data-index="${realIndex}">✏️ 編輯</button>
+            <button class="danger delete-btn" data-index="${realIndex}">❌ 刪除</button>
+          </div>
+        `;
+        listContainer.appendChild(div);
+      });
+
+      // 綁定動態清單按鈕事件
+      listContainer.querySelectorAll('.move-up-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => moveItem(parseInt(e.target.dataset.index), -1));
+      });
+      listContainer.querySelectorAll('.move-down-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => moveItem(parseInt(e.target.dataset.index), 1));
+      });
+      listContainer.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => openEditModal(parseInt(e.target.dataset.index)));
+      });
+      listContainer.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => deleteItem(parseInt(e.target.dataset.index)));
+      });
+    }
+
+    function openAddModal() {
+      document.getElementById('modal-title').innerText = '新增行程';
+      document.getElementById('edit-index').value = '-1';
+      document.getElementById('item-time').value = '';
+      document.getElementById('item-title').value = '';
+      document.getElementById('item-desc').value = '';
+      document.getElementById('modal-backdrop').style.display = 'flex';
+    }
+
+    function openEditModal(index) {
+      const dayKey = `day_${currentDay}`;
+      const item = appData.itineraries[dayKey][index];
+      document.getElementById('modal-title').innerText = '編輯行程';
+      document.getElementById('edit-index').value = index;
+      document.getElementById('item-time').value = item.time;
+      document.getElementById('item-title').value = item.title;
+      document.getElementById('item-desc').value = item.desc;
+      document.getElementById('modal-backdrop').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal-backdrop').style.display = 'none';
+    }
+
+    function saveItineraryItem() {
+      const index = parseInt(document.getElementById('edit-index').value);
+      const time = document.getElementById('item-time').value;
+      const title = document.getElementById('item-title').value;
+      const desc = document.getElementById('item-desc').value;
+
+      if (!title) return alert('請輸入行程標題或地點');
+
+      const dayKey = `day_${currentDay}`;
+      if (!appData.itineraries[dayKey]) appData.itineraries[dayKey] = [];
+
+      if (index === -1) {
+        appData.itineraries[dayKey].push({ time, title, desc });
+      } else {
+        appData.itineraries[dayKey][index] = { time, title, desc };
+      }
+
+      saveAppData();
+      closeModal();
+      renderItineraries();
+    }
+
+    function deleteItem(index) {
+      if (!confirm('確定要刪除這個行程嗎？')) return;
+      const dayKey = `day_${currentDay}`;
+      appData.itineraries[dayKey].splice(index, 1);
+      saveAppData();
+      renderItineraries();
+    }
+
+    function moveItem(index, direction) {
+      const dayKey = `day_${currentDay}`;
+      const items = appData.itineraries[dayKey];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= items.length) return;
+      
+      const temp = items[index];
+      items[index] = items[targetIndex];
+      items[targetIndex] = temp;
+
+      saveAppData();
+      renderItineraries();
+    }
+  </script>
+</body>
+</html>
