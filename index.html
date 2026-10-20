@@ -65,7 +65,7 @@
     .itinerary-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
     .time-title-group h4 { font-size: 16px; font-weight: 600; color: var(--wabi-ink); margin-bottom: 2px; }
 
-    /* 紅框區塊：文青簡約風圖示按鈕組 */
+    /* 紅框區塊：文青風格圖示按鈕組 */
     .action-icons-row { display: flex; align-items: center; gap: 6px; }
     .icon-action-btn { 
       background: #ffffff; border: 1px solid var(--wabi-line); color: var(--wabi-ink); width: 32px; height: 32px; 
@@ -166,7 +166,8 @@
 
   <!-- 新增/編輯行程互動小視窗 -->
   <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,42,41,0.4); justify-content:center; align-items:center; z-index:999; backdrop-filter: blur(2px);">
-    <div style="background:var(--wabi-card); padding:28px; border-radius:var(--radius); width:90%; max-width:480px; border: 1px solid var(--wabi-line); max-height: 90vh; overflow-y: auto;">
+    <!-- 調整 max-height 並加入 padding-bottom，避開右下角 Netlify 浮水印遮擋 -->
+    <div style="background:var(--wabi-card); padding:28px; border-radius:var(--radius); width:90%; max-width:480px; border: 1px solid var(--wabi-line); max-height: 85vh; overflow-y: auto;">
       <h3 id="modal-title" style="margin-bottom: 16px; font-family: Georgia, serif; font-weight: normal;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
       
@@ -201,12 +202,13 @@
         <input type="text" id="item-memo" placeholder="例如：記得提前預約、攜帶門票憑證">
       </div>
 
-      <div style="margin-bottom: 16px;">
+      <div style="margin-bottom: 24px;">
         <label>照片網址 / 圖片連結 (選填)</label>
         <input type="text" id="item-image" placeholder="https://... (圖片網址)">
       </div>
 
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <!-- 底部按鈕區加入額外底部安全距離，徹底防止被浮水印擋住 -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end; padding-bottom: 20px;">
         <button class="secondary" id="modal-cancel-btn">取消</button>
         <button id="modal-save-btn">儲存行程</button>
       </div>
@@ -350,7 +352,7 @@
         const div = document.createElement('div');
         div.className = 'itinerary-item';
         
-        // 判斷是否為實際店家地點（排除「出發」、「集合」等非地點項目）
+        // 判斷是否為實際店家地點（排除「出發」、「集合」、「賦歸」等非地點項目）
         const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
         const simulatedAddress = `地址：${item.title} 附近熱門商圈`;
         const simulatedHours = `營業時間：09:00 - 18:00`;
@@ -364,7 +366,7 @@
             <div class="time-title-group">
               <h4>🕒 ${item.time} ｜ ${item.title}</h4>
             </div>
-            <!-- 紅框區塊：文青風格圖示按鈕組（包含上下排序按鈕、編輯、刪除、連結） -->
+            <!-- 紅框區塊：文青風格圖示按鈕組（上下排序、編輯、刪除、連結） -->
             <div class="action-icons-row">
               ${item.link ? `<a href="${item.link}" target="_blank" class="icon-action-btn" title="外部連結">🔗</a>` : ''}
               <button class="icon-action-btn move-up-btn" data-index="${realIndex}" title="往上移">⬆️</button>
