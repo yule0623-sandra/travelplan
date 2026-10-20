@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Travel Journal ｜ 旅途，慢慢記錄</title>
-  <!-- 載入極速高倍率資料壓縮庫 (LZ-String) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <style>
     :root {
       --wabi-bg: #f5f2eb;
@@ -52,7 +50,7 @@
     .card { background: var(--wabi-card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 20px; }
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
-    input[type="text"], input[type="number"], select, textarea { 
+    input[type="text"], input[type="number"], input[type="date"], select, textarea { 
       width: 100%; padding: 10px 14px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 14px; background: #faf9f6; color: var(--wabi-ink); 
     }
     textarea { resize: vertical; min-height: 70px; }
@@ -164,37 +162,38 @@
           <input type="text" id="trip-destination" placeholder="例如：日本京都 或 地中海郵輪">
         </div>
         <div>
-          <label>旅遊天數設定 (天)</label>
-          <input type="number" id="trip-days" min="1" value="3">
+          <label>出發日期</label>
+          <input type="date" id="trip-start-date">
         </div>
       </div>
 
       <div class="grid-2" style="margin-top: 12px;">
+        <div>
+          <label>旅遊天數設定 (天)</label>
+          <input type="number" id="trip-days" min="1" value="3">
+        </div>
         <div>
           <label>頁面大標題 (英文/自訂)</label>
           <input type="text" id="custom-brand-title" placeholder="例如：TRAVEL JOURNAL">
         </div>
       </div>
       
-      <div style="margin-top: 8px;">
+      <div style="margin-top: 12px;">
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--wabi-ink);">
           <input type="checkbox" id="is-international" style="width: auto;"> 
-          這是國外旅遊（需加註航班或郵輪資訊）
+          這是國外旅遊（需加註往返航班或郵輪資訊）
         </label>
       </div>
 
       <div id="transport-section" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--wabi-line);">
         <div class="grid-2">
           <div>
-            <label>交通工具類型</label>
-            <select id="transport-type">
-              <option value="flight">✈️ 航班資訊</option>
-              <option value="cruise">🚢 郵輪資訊</option>
-            </select>
+            <label>去程交通（航班 / 航次與時間）</label>
+            <input type="text" id="transport-outbound" placeholder="例如: CI-102 台北 08:00 -> 大阪 11:30">
           </div>
           <div>
-            <label>編號 / 航次與時間</label>
-            <input type="text" id="transport-detail" placeholder="例如: CI-102 / 麗星郵輪 14:00 發航">
+            <label>回程交通（航班 / 航次與時間）</label>
+            <input type="text" id="transport-inbound" placeholder="例如: CI-103 大阪 14:00 -> 台北 16:00">
           </div>
         </div>
       </div>
@@ -288,8 +287,8 @@
     let currentDay = 1;
     let tripsList = [];
     let currentTripData = {
-      id: '', title: '高雄三日遊', destination: '高雄', days: 3, brandTitle: 'TRAVEL JOURNAL',
-      isInternational: false, transportType: 'flight', transportDetail: '', itineraries: {}
+      id: '', title: '高雄三日遊', destination: '高雄', startDate: '', days: 3, brandTitle: 'TRAVEL JOURNAL',
+      isInternational: false, transportOutbound: '', transportInbound: '', itineraries: {}
     };
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -318,14 +317,15 @@
       }
 
       document.getElementById('trip-destination').oninput = saveCurrentTripData;
+      document.getElementById('trip-start-date').oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
       document.getElementById('trip-days').oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
       document.getElementById('custom-brand-title').oninput = (e) => {
         currentTripData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
         saveCurrentTripData();
       };
       document.getElementById('is-international').onchange = () => { toggleInternationalFields(); saveCurrentTripData(); };
-      document.getElementById('transport-type').onchange = saveCurrentTripData;
-      document.getElementById('transport-detail').oninput = saveCurrentTripData;
+      document.getElementById('transport-outbound').oninput = saveCurrentTripData;
+      document.getElementById('transport-inbound').oninput = saveCurrentTripData;
 
       document.getElementById('add-item-btn').onclick = openAddModal;
       document.getElementById('modal-cancel-btn').onclick = closeModal;
@@ -339,7 +339,6 @@
         searchInput.addEventListener('input', (e) => { if (!isComposing) renderItineraries(e.target.value); });
       }
 
-      // 檢查網址是否帶有極短壓縮分享碼
       checkUrlAutoImport();
 
       if (currentUser && currentUser.trim() !== '') {
@@ -378,8 +377,8 @@
       }
       if (tripsList.length === 0) {
         const defaultTrip = {
-          id: 'trip_' + Date.now(), title: '高雄三日遊', destination: '高雄', days: 3,
-          brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportType: 'flight', transportDetail: '', itineraries: {}
+          id: 'trip_' + Date.now(), title: '高雄三日遊', destination: '高雄', startDate: '', days: 3,
+          brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportOutbound: '', transportInbound: '', itineraries: {}
         };
         tripsList.push(defaultTrip);
         saveUserTrips();
@@ -429,8 +428,8 @@
       const title = prompt('請輸入新行程名稱（例如：東京賞楓五日遊）：', '新旅遊行程');
       if (!title) return;
       const newTrip = {
-        id: 'trip_' + Date.now(), title: title, destination: title, days: 3,
-        brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportType: 'flight', transportDetail: '', itineraries: {}
+        id: 'trip_' + Date.now(), title: title, destination: title, startDate: '', days: 3,
+        brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportOutbound: '', transportInbound: '', itineraries: {}
       };
       tripsList.push(newTrip);
       saveUserTrips();
@@ -457,11 +456,12 @@
       document.getElementById('detail-user-display').innerText = currentUser;
 
       document.getElementById('trip-destination').value = currentTripData.destination || '';
+      document.getElementById('trip-start-date').value = currentTripData.startDate || '';
       document.getElementById('trip-days').value = currentTripData.days || 3;
       document.getElementById('custom-brand-title').value = currentTripData.brandTitle || 'TRAVEL JOURNAL';
       document.getElementById('is-international').checked = !!currentTripData.isInternational;
-      document.getElementById('transport-type').value = currentTripData.transportType || 'flight';
-      document.getElementById('transport-detail').value = currentTripData.transportDetail || '';
+      document.getElementById('transport-outbound').value = currentTripData.transportOutbound || '';
+      document.getElementById('transport-inbound').value = currentTripData.transportInbound || '';
 
       toggleInternationalFields();
       updateTripDaysConfig();
@@ -472,11 +472,12 @@
       if (!currentTripId) return;
       currentTripData.destination = document.getElementById('trip-destination').value;
       currentTripData.title = currentTripData.destination ? `${currentTripData.destination}行程` : '未命名行程';
+      currentTripData.startDate = document.getElementById('trip-start-date').value;
       currentTripData.days = parseInt(document.getElementById('trip-days').value) || 3;
       currentTripData.brandTitle = document.getElementById('custom-brand-title').value || 'TRAVEL JOURNAL';
       currentTripData.isInternational = document.getElementById('is-international').checked;
-      currentTripData.transportType = document.getElementById('transport-type').value;
-      currentTripData.transportDetail = document.getElementById('transport-detail').value;
+      currentTripData.transportOutbound = document.getElementById('transport-outbound').value;
+      currentTripData.transportInbound = document.getElementById('transport-inbound').value;
 
       const index = tripsList.findIndex(t => t.id === currentTripId);
       if (index !== -1) {
@@ -485,11 +486,9 @@
       }
     }
 
-    // 使用 LZ-String 高倍率演算法壓縮資料，生成短網址/短碼
     function exportTripCode() {
       try {
         const jsonStr = JSON.stringify(currentTripData);
-        // 使用 URI 安全的演算法進行高倍率壓縮
         const compressedCode = LZString.compressToEncodedURIComponent(jsonStr);
         const baseUrl = window.location.origin + window.location.pathname;
         const shareUrl = `${baseUrl}#s=${compressedCode}`;
@@ -508,23 +507,12 @@
       }
     }
 
-    // 自動讀取並解壓縮網址上的短碼
     function checkUrlAutoImport() {
       const hash = window.location.hash;
       if (hash && (hash.includes('#s=') || hash.includes('#share='))) {
         try {
-          let code = '';
-          if (hash.includes('#s=')) {
-            code = hash.split('#s=')[1];
-          } else {
-            code = hash.split('#share=')[1];
-          }
-
-          let jsonStr = LZString.decompressFromEncodedURIComponent(code);
-          if (!jsonStr) {
-            jsonStr = decodeURIComponent(code);
-          }
-
+          let code = hash.includes('#s=') ? hash.split('#s=')[1] : hash.split('#share=')[1];
+          let jsonStr = LZString.decompressFromEncodedURIComponent(code) || decodeURIComponent(code);
           const importedTrip = JSON.parse(jsonStr);
 
           if (importedTrip && importedTrip.destination) {
@@ -539,8 +527,6 @@
 
             tripsList.push(importedTrip);
             saveUserTrips();
-
-            // 清除網址上的 Hash 避免重複匯入
             window.history.replaceState(null, null, window.location.pathname);
             
             alert('🎉 成功載入並同步好友分享的行程！');
@@ -553,24 +539,16 @@
       }
     }
 
-    // 手動貼上短網址或壓縮碼匯入
     function importTripByCode() {
       const input = prompt('請貼上好友傳給您的行程分享短網址（或分享碼）：');
       if (!input || !input.trim()) return;
 
       try {
         let rawData = input.trim();
-        if (rawData.includes('#s=')) {
-          rawData = rawData.split('#s=')[1];
-        } else if (rawData.includes('#share=')) {
-          rawData = rawData.split('#share=')[1];
-        }
+        if (rawData.includes('#s=')) rawData = rawData.split('#s=')[1];
+        else if (rawData.includes('#share=')) rawData = rawData.split('#share=')[1];
 
-        let jsonStr = LZString.decompressFromEncodedURIComponent(rawData);
-        if (!jsonStr) {
-          jsonStr = decodeURIComponent(rawData);
-        }
-
+        let jsonStr = LZString.decompressFromEncodedURIComponent(rawData) || decodeURIComponent(rawData);
         const importedTrip = JSON.parse(jsonStr);
         
         if (importedTrip && importedTrip.destination) {
@@ -596,17 +574,31 @@
 
     function updateTripDaysConfig() {
       const totalDays = parseInt(document.getElementById('trip-days').value) || 1;
+      const startDateStr = document.getElementById('trip-start-date').value;
       const container = document.getElementById('day-tabs-container');
       if (!container) return;
 
       container.innerHTML = '';
       if (currentDay > totalDays) currentDay = 1;
 
+      let baseDate = startDateStr ? new Date(startDateStr) : null;
+
       for (let i = 1; i <= totalDays; i++) {
+        let dateText = '';
+        if (baseDate && !isNaN(baseDate.getTime())) {
+          let currDate = new Date(baseDate);
+          currDate.setDate(baseDate.getDate() + (i - 1));
+          const m = currDate.getMonth() + 1;
+          const d = currDate.getDate();
+          const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+          const w = weekdays[currDate.getDay()];
+          dateText = ` (${m}/${d} 週${w})`;
+        }
+
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = `day-tab ${i === currentDay ? 'active' : ''}`;
-        btn.innerText = `第 ${i} 日`;
+        btn.innerText = `第 ${i} 日${dateText}`;
         btn.onclick = () => {
           currentDay = i;
           updateTripDaysConfig();
