@@ -103,7 +103,7 @@
     <h2>✦ 旅途，慢慢記錄</h2>
     <p>輸入您的個人帳號名稱以載入專屬行程</p>
     <input type="text" id="username-input" placeholder="例如：Cassandra" value="Cassandra">
-    <button id="login-btn" style="width: 100%;">進入我的旅程</button>
+    <button id="login-btn" type="button" style="width: 100%;">進入我的旅程</button>
   </div>
 
   <!-- 主應用介面 -->
@@ -115,7 +115,7 @@
       </div>
       <div class="header-right">
         <span class="user-badge" id="current-user-display">使用者</span>
-        <button class="secondary" id="logout-btn" style="padding: 4px 12px; font-size: 12px;">切換帳號</button>
+        <button class="secondary" id="logout-btn" type="button" style="padding: 4px 12px; font-size: 12px;">切換帳號</button>
       </div>
     </header>
 
@@ -168,7 +168,7 @@
       
       <div class="toolbar">
         <input type="text" id="search-input" placeholder="🔍 搜尋行程、地點或備註...">
-        <button id="add-item-btn">＋ 新增行程</button>
+        <button id="add-item-btn" type="button">＋ 新增行程</button>
       </div>
 
       <div class="day-tabs" id="day-tabs-container"></div>
@@ -219,8 +219,8 @@
       </div>
 
       <div style="display: flex; gap: 10px; justify-content: flex-end; padding-bottom: 20px;">
-        <button class="secondary" id="modal-cancel-btn">取消</button>
-        <button id="modal-save-btn">儲存行程</button>
+        <button class="secondary" id="modal-cancel-btn" type="button">取消</button>
+        <button id="modal-save-btn" type="button">儲存行程</button>
       </div>
     </div>
   </div>
@@ -239,52 +239,90 @@
     };
 
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('login-btn').addEventListener('click', handleLogin);
-      document.getElementById('logout-btn').addEventListener('click', handleLogout);
+      // 強化防呆：直接綁定點擊事件
+      const loginBtn = document.getElementById('login-btn');
+      if (loginBtn) {
+        loginBtn.onclick = handleLogin;
+      }
 
-      document.getElementById('trip-destination').addEventListener('input', saveAppData);
-      document.getElementById('trip-days').addEventListener('input', () => { updateTripDaysConfig(); saveAppData(); });
-      document.getElementById('custom-brand-title').addEventListener('input', (e) => {
-        appData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
-        document.getElementById('display-brand-titleinnerText = appData.brandTitle;
-        saveAppData();
-      });
-      document.getElementById('custom-brand-title').addEventListener('input', (e) => {
-        appData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
-        document.getElementById('display-brand-title').innerText = appData.brandTitle;
-        saveAppData();
-      });
-      document.getElementById('is-international').addEventListener('change', () => { toggleInternationalFields(); saveAppData(); });
-      document.getElementById('transport-type').addEventListener('change', saveAppData);
-      document.getElementById('transport-detail').addEventListener('input', saveAppData);
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.onclick = handleLogout;
+      }
 
-      document.getElementById('add-item-btn').addEventListener('click', openAddModal);
-      document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-      document.getElementById('modal-save-btn').addEventListener('click', saveItineraryItem);
+      const tripDest = document.getElementById('trip-destination');
+      if (tripDest) tripDest.oninput = saveAppData;
 
+      const tripDays = document.getElementById('trip-days');
+      if (tripDays) {
+        tripDays.oninput = () => { updateTripDaysConfig(); saveAppData(); };
+      }
+
+      const customBrand = document.getElementById('custom-brand-title');
+      if (customBrand) {
+        customBrand.oninput = (e) => {
+          appData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
+          const brandEl = document.getElementById('display-brand-title');
+          if (brandEl) brandEl.innerText = appData.brandTitle;
+          saveAppData();
+        };
+      }
+
+      const isInter = document.getElementById('is-international');
+      if (isInter) {
+        isInter.onchange = () => { toggleInternationalFields(); saveAppData(); };
+      }
+
+      const transType = document.getElementById('transport-type');
+      if (transType) transType.onchange = saveAppData;
+
+      const transDetail = document.getElementById('transport-detail');
+      if (transDetail) transDetail.oninput = saveAppData;
+
+      const addItemBtn = document.getElementById('add-item-btn');
+      if (addItemBtn) addItemBtn.onclick = openAddModal;
+
+      const modalCancel = document.getElementById('modal-cancel-btn');
+      if (modalCancel) modalCancel.onclick = closeModal;
+
+      const modalSave = document.getElementById('modal-save-btn');
+      if (modalSave) modalSave.onclick = saveItineraryItem;
+
+      // 中文注音搜尋防呆
       let isComposing = false;
       const searchInput = document.getElementById('search-input');
-      searchInput.addEventListener('compositionstart', () => { isComposing = true; });
-      searchInput.addEventListener('compositionend', (e) => { isComposing = false; renderItineraries(e.target.value); });
-      searchInput.addEventListener('input', (e) => { if (!isComposing) renderItineraries(e.target.value); });
+      if (searchInput) {
+        searchInput.addEventListener('compositionstart', () => { isComposing = true; });
+        searchInput.addEventListener('compositionend', (e) => { isComposing = false; renderItineraries(e.target.value); });
+        searchInput.addEventListener('input', (e) => { if (!isComposing) renderItineraries(e.target.value); });
+      }
 
-      if (currentUser) {
+      // 檢查若已有登入紀錄直接進入
+      if (currentUser && currentUser.trim() !== '') {
         initAppScreen();
       }
     });
 
     function handleLogin() {
-      const input = document.getElementById('username-input').value.trim();
-      if (!input) return alert('請輸入您的帳號名稱');
+      const inputEl = document.getElementById('username-input');
+      const input = inputEl ? inputEl.value.trim() : '';
+      if (!input) {
+        alert('請輸入您的帳號名稱');
+        return;
+      }
       currentUser = input;
       localStorage.setItem('current_user', currentUser);
       initAppScreen();
     }
 
     function initAppScreen() {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app-screen').style.display = 'block';
-      document.getElementById('current-user-display').innerText = currentUser;
+      const loginScreen = document.getElementById('login-screen');
+      const appScreen = document.getElementById('app-screen');
+      const userDisplay = document.getElementById('current-user-display');
+
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (appScreen) appScreen.style.display = 'block';
+      if (userDisplay) userDisplay.innerText = currentUser;
       loadAppData();
     }
 
@@ -295,12 +333,19 @@
 
     function saveAppData() {
       if (!currentUser) return;
-      appData.destination = document.getElementById('trip-destination').value;
-      appData.days = parseInt(document.getElementById('trip-days').value) || 3;
-      appData.brandTitle = document.getElementById('custom-brand-title').value || 'TRAVEL JOURNAL';
-      appData.isInternational = document.getElementById('is-international').checked;
-      appData.transportType = document.getElementById('transport-type').value;
-      appData.transportDetail = document.getElementById('transport-detail').value;
+      const destEl = document.getElementById('trip-destination');
+      const daysEl = document.getElementById('trip-days');
+      const brandEl = document.getElementById('custom-brand-title');
+      const interEl = document.getElementById('is-international');
+      const tTypeEl = document.getElementById('transport-type');
+      const tDetailEl = document.getElementById('transport-detail');
+
+      appData.destination = destEl ? destEl.value : '';
+      appData.days = daysEl ? (parseInt(daysEl.value) || 3) : 3;
+      appData.brandTitle = brandEl ? (brandEl.value || 'TRAVEL JOURNAL') : 'TRAVEL JOURNAL';
+      appData.isInternational = interEl ? interEl.checked : false;
+      appData.transportType = tTypeEl ? tTypeEl.value : 'flight';
+      appData.transportDetail = tDetailEl ? tDetailEl.value : '';
       
       localStorage.setItem(`travel_app_data_${currentUser}`, JSON.stringify(appData));
     }
@@ -310,13 +355,21 @@
       if (saved) {
         try {
           appData = JSON.parse(saved);
-          document.getElementById('trip-destination').value = appData.destination || '';
-          document.getElementById('trip-days').value = appData.days || 3;
-          document.getElementById('custom-brand-title').value = appData.brandTitle || 'TRAVEL JOURNAL';
-          document.getElementById('display-brand-title').innerText = appData.brandTitle || 'TRAVEL JOURNAL';
-          document.getElementById('is-international').checked = !!appData.isInternational;
-          document.getElementById('transport-type').value = appData.transportType || 'flight';
-          document.getElementById('transport-detail').value = appData.transportDetail || '';
+          const destEl = document.getElementById('trip-destination');
+          const daysEl = document.getElementById('trip-days');
+          const brandInputEl = document.getElementById('custom-brand-title');
+          const brandDisplayEl = document.getElementById('display-brand-title');
+          const interEl = document.getElementById('is-international');
+          const tTypeEl = document.getElementById('transport-type');
+          const tDetailEl = document.getElementById('transport-detail');
+
+          if (destEl) destEl.value = appData.destination || '';
+          if (daysEl) daysEl.value = appData.days || 3;
+          if (brandInputEl) brandInputEl.value = appData.brandTitle || 'TRAVEL JOURNAL';
+          if (brandDisplayEl) brandDisplayEl.innerText = appData.brandTitle || 'TRAVEL JOURNAL';
+          if (interEl) interEl.checked = !!appData.isInternational;
+          if (tTypeEl) tTypeEl.value = appData.transportType || 'flight';
+          if (tDetailEl) tDetailEl.value = appData.transportDetail || '';
         } catch(e) {}
       }
       toggleInternationalFields();
@@ -325,26 +378,32 @@
     }
 
     function toggleInternationalFields() {
-      const isChecked = document.getElementById('is-international').checked;
-      document.getElementById('transport-section').style.display = isChecked ? 'block' : 'none';
+      const interEl = document.getElementById('is-international');
+      const transSec = document.getElementById('transport-section');
+      if (interEl && transSec) {
+        transSec.style.display = interEl.checked ? 'block' : 'none';
+      }
     }
 
     function updateTripDaysConfig() {
-      const totalDays = parseInt(document.getElementById('trip-days').value) || 1;
+      const daysEl = document.getElementById('trip-days');
+      const totalDays = daysEl ? (parseInt(daysEl.value) || 1) : 1;
       const container = document.getElementById('day-tabs-container');
+      if (!container) return;
+
       container.innerHTML = '';
-      
       if (currentDay > totalDays) currentDay = 1;
 
       for (let i = 1; i <= totalDays; i++) {
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = `day-tab ${i === currentDay ? 'active' : ''}`;
         btn.innerText = `第 ${i} 日`;
-        btn.addEventListener('click', () => {
+        btn.onclick = () => {
           currentDay = i;
           updateTripDaysConfig();
           renderItineraries();
-        });
+        };
         container.appendChild(btn);
       }
       renderItineraries();
@@ -352,6 +411,7 @@
 
     function renderItineraries(filterKeyword = '') {
       const listContainer = document.getElementById('itinerary-list');
+      if (!listContainer) return;
       listContainer.innerHTML = '';
       
       const dayKey = `day_${currentDay}`;
@@ -390,10 +450,10 @@
             </div>
             <div class="action-icons-row">
               ${item.link ? `<a href="${item.link}" target="_blank" class="icon-action-btn" title="外部連結">🔗</a>` : ''}
-              <button class="icon-action-btn move-up-btn" data-index="${realIndex}" title="往上移">🔺</button>
-              <button class="icon-action-btn move-down-btn" data-index="${realIndex}" title="往下移">🔻</button>
-              <button class="icon-action-btn edit-btn" data-index="${realIndex}" title="編輯行程">✏️</button>
-              <button class="icon-action-btn danger-icon delete-btn" data-index="${realIndex}" title="刪除行程">🗑️</button>
+              <button class="icon-action-btn move-up-btn" type="button" data-index="${realIndex}" title="往上移">🔺</button>
+              <button class="icon-action-btn move-down-btn" type="button" data-index="${realIndex}" title="往下移">🔻</button>
+              <button class="icon-action-btn edit-btn" type="button" data-index="${realIndex}" title="編輯行程">✏️</button>
+              <button class="icon-action-btn danger-icon delete-btn" type="button" data-index="${realIndex}" title="刪除行程">🗑️</button>
             </div>
           </div>
 
@@ -425,16 +485,16 @@
       });
 
       listContainer.querySelectorAll('.move-up-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => moveItem(parseInt(e.currentTarget.dataset.index), -1));
+        btn.onclick = (e) => moveItem(parseInt(e.currentTarget.dataset.index), -1);
       });
       listContainer.querySelectorAll('.move-down-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => moveItem(parseInt(e.currentTarget.dataset.index), 1));
+        btn.onclick = (e) => moveItem(parseInt(e.currentTarget.dataset.index), 1);
       });
       listContainer.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => openEditModal(parseInt(e.currentTarget.dataset.index)));
+        btn.onclick = (e) => openEditModal(parseInt(e.currentTarget.dataset.index));
       });
       listContainer.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => deleteItem(parseInt(e.currentTarget.dataset.index)));
+        btn.onclick = (e) => deleteItem(parseInt(e.currentTarget.dataset.index));
       });
     }
 
@@ -494,7 +554,10 @@
       const memo = document.getElementById('item-memo').value;
       const image = document.getElementById('item-image').value;
 
-      if (!title && !desc) return alert('請至少輸入行程名稱或備註描述');
+      if (!title && !desc) {
+        alert('請至少輸入行程名稱或備註描述');
+        return;
+      }
 
       const dayKey = `day_${currentDay}`;
       if (!appData.itineraries[dayKey]) appData.itineraries[dayKey] = [];
