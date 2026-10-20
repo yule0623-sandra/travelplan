@@ -31,7 +31,6 @@
     
     #app-screen { display: none; }
     
-    /* 頂部導覽列：調整右側區塊為上下置中與適當間距 */
     header { 
       display: flex; justify-content: space-between; align-items: center; background: var(--wabi-card); 
       padding: 20px 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 24px; 
@@ -43,7 +42,7 @@
       flex-direction: column;
       align-items: flex-end;
       justify-content: center;
-      gap: 8px; /* 讓上下按鈕／標籤保持舒適的間距，不黏在一起 */
+      gap: 8px;
     }
     .user-badge { font-weight: 500; font-size: 13px; color: var(--wabi-primary); background: #f0f2ee; padding: 6px 14px; border-radius: 20px; }
 
@@ -110,12 +109,10 @@
   <!-- 主應用介面 -->
   <div id="app-screen" class="max-w-4xl">
     <header>
-      <!-- 紅色圈起來的標題區塊（可自由修改文字） -->
       <div>
-        <div class="brand-title">TRAVEL JOURNAL</div>
-        <small style="color: var(--wabi-muted);">日式侘寂風・智能行程規劃</small>
+        <div class="brand-title" id="display-brand-title">TRAVEL JOURNAL</div>
+        <small style="color: var(--wabi-muted);">made by Sandra</small>
       </div>
-      <!-- 右側用戶名與切換按鈕（靠右、上下置中、有適當間距） -->
       <div class="header-right">
         <span class="user-badge" id="current-user-display">使用者</span>
         <button class="secondary" id="logout-btn" style="padding: 4px 12px; font-size: 12px;">切換帳號</button>
@@ -132,6 +129,13 @@
         <div>
           <label>旅遊天數設定 (天)</label>
           <input type="number" id="trip-days" min="1" value="3">
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 12px;">
+        <div>
+          <label>頁面大標題 (英文/自訂)</label>
+          <input type="text" id="custom-brand-title" placeholder="例如：TRAVEL JOURNAL">
         </div>
       </div>
       
@@ -227,6 +231,7 @@
     let appData = {
       destination: '',
       days: 3,
+      brandTitle: 'TRAVEL JOURNAL',
       isInternational: false,
       transportType: 'flight',
       transportDetail: '',
@@ -239,6 +244,16 @@
 
       document.getElementById('trip-destination').addEventListener('input', saveAppData);
       document.getElementById('trip-days').addEventListener('input', () => { updateTripDaysConfig(); saveAppData(); });
+      document.getElementById('custom-brand-title').addEventListener('input', (e) => {
+        appData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
+        document.getElementById('display-brand-titleinnerText = appData.brandTitle;
+        saveAppData();
+      });
+      document.getElementById('custom-brand-title').addEventListener('input', (e) => {
+        appData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
+        document.getElementById('display-brand-title').innerText = appData.brandTitle;
+        saveAppData();
+      });
       document.getElementById('is-international').addEventListener('change', () => { toggleInternationalFields(); saveAppData(); });
       document.getElementById('transport-type').addEventListener('change', saveAppData);
       document.getElementById('transport-detail').addEventListener('input', saveAppData);
@@ -282,6 +297,7 @@
       if (!currentUser) return;
       appData.destination = document.getElementById('trip-destination').value;
       appData.days = parseInt(document.getElementById('trip-days').value) || 3;
+      appData.brandTitle = document.getElementById('custom-brand-title').value || 'TRAVEL JOURNAL';
       appData.isInternational = document.getElementById('is-international').checked;
       appData.transportType = document.getElementById('transport-type').value;
       appData.transportDetail = document.getElementById('transport-detail').value;
@@ -296,6 +312,8 @@
           appData = JSON.parse(saved);
           document.getElementById('trip-destination').value = appData.destination || '';
           document.getElementById('trip-days').value = appData.days || 3;
+          document.getElementById('custom-brand-title').value = appData.brandTitle || 'TRAVEL JOURNAL';
+          document.getElementById('display-brand-title').innerText = appData.brandTitle || 'TRAVEL JOURNAL';
           document.getElementById('is-international').checked = !!appData.isInternational;
           document.getElementById('transport-type').value = appData.transportType || 'flight';
           document.getElementById('transport-detail').value = appData.transportDetail || '';
