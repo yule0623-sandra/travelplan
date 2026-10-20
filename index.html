@@ -560,24 +560,47 @@
       }
     }
 
+    // 點擊「匯出分享碼」自動複製到剪貼簿
     function exportTripCode() {
-      const codeStr = btoa(encodeURIComponent(JSON.stringify(currentTripData)));
-      prompt('這是您的行程分享碼，請複製並傳給好友：', codeStr);
+      try {
+        const jsonStr = JSON.stringify(currentTripData);
+        // 使用 encodeURIComponent 確保中文不亂碼
+        const codeStr = btoa(encodeURIComponent(jsonStr));
+        
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(codeStr).then(() => {
+            alert('✨ 行程分享碼已自動複製到剪貼簿！\n您可以直接貼上發送給好友。');
+          }).catch(() => {
+            fallbackCopyText(codeStr);
+          });
+        } else {
+          fallbackCopyText(codeStr);
+        }
+      } catch (e) {
+        alert('匯出分享碼失敗，請確認行程資料是否過大！');
+      }
+    }
+
+    function fallbackCopyText(text) {
+      prompt('這是您的行程分享碼，請複製並傳給好友：', text);
     }
 
     function importTripByCode() {
       const codeStr = prompt('請貼上好友傳給您的行程分享碼：');
-      if (!codeStr) return;
+      if (!codeStr || !codeStr.trim()) return;
       try {
-        const decoded = JSON.parse(decodeURIComponent(atob(codeStr)));
+        const cleanStr = codeStr.trim();
+        const decodedStr = decodeURIComponent(atob(cleanStr));
+        const decoded = JSON.parse(decodedStr);
+        
         decoded.id = 'trip_' + Date.now();
-        decoded.title = decoded.title + ' (好友分享)';
+        decoded.title = (decoded.destination || '好友') + '行程 (分享檔)';
         tripsList.push(decoded);
         saveUserTrips();
         renderFolderList();
-        alert('成功匯入好友的行程！');
+        alert('🎉 成功匯入好友的行程！');
       } catch(e) {
-        alert('分享碼格式錯誤，無法匯入！');
+        alert('⚠️ 分享碼格式不正確，無法順利匯入，請確認是否完整複製！');
       }
     }
 
@@ -638,7 +661,6 @@
         
         const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
         
-        // 地址邏輯：若有輸入自訂地址用自訂地址，否則呈現地點名稱，完全去除「附近熱門商圈」字樣
         const displayAddress = item.address ? item.address : item.title;
         const displayHours = item.hours ? `營業時間：${item.hours}` : `營業時間：09:00 - 18:00`;
         const mapSearchQuery = item.address ? item.address : item.title;
