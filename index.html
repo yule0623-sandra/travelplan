@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智慧旅遊日誌與行程規劃工具</title>
+  <style>
+    :root {
+      --primary-color: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.5; padding: 20px; }
+    .max-w-4xl { max-width: 56rem; margin: 0 auto; }
+    
+    /* 登入畫面 */
+    #login-screen {
+      max-width: 400px; margin: 80px auto; background: var(--card-bg); padding: 30px;
+      border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;
+    }
+    #login-screen h2 { margin-bottom: 20px; color: var(--primary-color); }
+    #login-screen input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; }
+    
+    /* 主應用介面 */
+    #app-screen { display: none; }
+    header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); margin-bottom: 20px; }
+    .user-badge { font-weight: bold; color: var(--primary-color); background: #e0e7ff; padding: 5px 12px; border-radius: 20px; }
+
+    /* 設定卡片 */
+    .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); margin-bottom: 20px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 15px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
+    input[type="text"], input[type="number"], select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; }
+    
+    /* 搜尋與操作區 */
+    .toolbar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .toolbar input { flex: 1; min-width: 200px; }
+    
+    /* 按鈕樣式 */
+    button { background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: #e2e8f0; color: var(--text-main); }
+    button.secondary:hover { background: #cbd5e1; }
+    button.danger { background: #ef4444; }
+    button.danger:hover { background: #dc2626; }
+
+    /* 天數頁籤 */
+    .day-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+    .day-tab { padding: 6px 14px; border-radius: 20px; background: #e2e8f0; color: var(--text-main); border: none; cursor: pointer; white-space: nowrap; }
+    .day-tab.active { background: var(--primary-color); color: white; }
+
+    /* 行程清單 */
+    .itinerary-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; }
+    .itinerary-info h4 { font-size: 16px; margin-bottom: 3px; }
+    .itinerary-info p { font-size: 13px; color: var(--text-muted); }
+    .item-actions { display: flex; gap: 6px; }
+    .item-actions button { padding: 4px 8px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- 登入畫面 -->
+  <div id="login-screen">
+    <h2>🔐 個人行程帳號登入</h2>
+    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">輸入您的專屬名稱以建立或載入雲端記憶行程</p>
+    <input type="text" id="username-input" placeholder="例如：Cassandra">
+    <button onclick="handleLogin()" style="width: 100%;">進入我的旅程</button>
+  </div>
+
+  <!-- 主應用介面 -->
+  <div id="app-screen" class="max-w-4xl">
+    <header>
+      <div>
+        <h3>✈️ 智慧旅遊日誌</h3>
+        <small style="color: var(--text-muted);">輕鬆規劃、動態天數、航班/郵輪與地圖整合</small>
+      </div>
+      <div>
+        <span class="user-badge" id="current-user-display">使用者</span>
+        <button class="secondary" onclick="handleLogout()" style="margin-left: 10px; padding: 4px 10px; font-size: 12px;">切換帳號</button>
+      </div>
+    </header>
+
+    <!-- 旅程基本設定 -->
+    <div class="card">
+      <h3 style="margin-bottom: 15px;">🌍 旅程基本設定</h3>
+      <div class="grid-2">
+        <div>
+          <label>旅遊地點 / 國家</label>
+          <input type="text" id="trip-destination" placeholder="例如：日本東京 或 地中海郵輪" onchange="saveAppData()">
+        </div>
+        <div>
+          <label>旅遊天數設定 (天)</label>
+          <input type="number" id="trip-days" min="1" value="3" onchange="updateTripDaysConfig(); saveAppData();">
+        </div>
+      </div>
+      
+      <!-- 國外旅遊加開航班/郵輪選項 -->
+      <div style="margin-top: 10px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="is-international" onchange="toggleInternationalFields(); saveAppData();" style="width: auto;"> 
+          這是國外旅遊（需加註航班或郵輪資訊）
+        </label>
+      </div>
+
+      <div id="transport-section" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+        <div class="grid-2">
+          <div>
+            <label>交通工具類型</label>
+            <select id="transport-type" onchange="saveAppData()">
+              <option value="flight">✈️ 航班資訊</option>
+              <option value="cruise">🚢 郵輪資訊</option>
+            </select>
+          </div>
+          <div>
+            <label>編號 / 航次與時間</label>
+            <input type="text" id="transport-detail" placeholder="例如: CI-102 / 麗星郵輪 14:00 發航" onchange="saveAppData()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 行程管理與搜尋區 -->
+    <div class="card">
+      <h3 style="margin-bottom: 15px;">📅 每日行程與 Google Maps 已儲存地點</h3>
+      
+      <!-- 搜尋列 -->
+      <div class="toolbar">
+        <input type="text" id="search-input" placeholder="🔍 搜尋行程或 Google Maps 已儲存地點...">
+        <button onclick="openAddModal()">＋ 新增行程</button>
+      </div>
+
+      <!-- 天數頁籤導覽 -->
+      <div class="day-tabs" id="day-tabs-container"></div>
+
+      <!-- 當前天數行程清單 -->
+      <div id="itinerary-list">
+        <!-- 動態載入行程 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增/編輯行程互動小視窗 -->
+  <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); justify-content:center; align-items:center;">
+    <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:450px;">
+      <h3 id="modal-title" style="margin-bottom: 15px;">新增行程</h3>
+      <input type="hidden" id="edit-index" value="-1">
+      <div style="margin-bottom: 12px;">
+        <label>時間 / 時段</label>
+        <input type="text" id="item-time" placeholder="例如: 10:00 AM">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label>行程標題 / 地點 (可結合 Google Maps 已儲存地點名稱)</label>
+        <input type="text" id="item-title" placeholder="例如: 淺草寺雷門">
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>備註 / 必吃美食說明</label>
+        <input type="text" id="item-desc" placeholder="例如: 租借和服、品嚐雷門人形燒">
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="secondary" onclick="closeModal()">取消</button>
+        <button onclick="saveItineraryItem()">儲存行程</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = localStorage.getItem('current_user') || '';
+    let currentDay = 1;
+    let appData = {
+      destination: '',
+      days: 3,
+      isInternational: false,
+      transportType: 'flight',
+      transportDetail: '',
+      itineraries: {} 
+    };
+
+    if (currentUser) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      document.getElementById('current-user-display').innerText = currentUser;
+      loadAppData();
+    }
+
+    function handleLogin() {
+      const input = document.getElementById('username-input').value.trim();
+      if (!input) return alert('請輸入您的帳號名稱');
+      currentUser = input;
+      localStorage.setItem('current_user', currentUser);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      document.getElementById('current-user-display').innerText = currentUser;
+      loadAppData();
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('current_user');
+      location.reload();
+    }
+
+    function saveAppData() {
+      if (!currentUser) return;
+      appData.destination = document.getElementById('trip-destination').value;
+      appData.days = parseInt(document.getElementById('trip-days').value) || 3;
+      appData.isInternational = document.getElementById('is-international').checked;
+      appData.transportType = document.getElementById('transport-type').value;
+      appData.transportDetail = document.getElementById('transport-detail').value;
+      
+      localStorage.setItem(`travel_app_data_${currentUser}`, JSON.stringify(appData));
+    }
+
+    function loadAppData() {
+      const saved = localStorage.getItem(`travel_app_data_${currentUser}`);
+      if (saved) {
+        appData = JSON.parse(saved);
+        document.getElementById('trip-destination').value = appData.destination || '';
+        document.getElementById('trip-days').value = appData.days || 3;
+        document.getElementById('is-international').checked = !!appData.isInternational;
+        document.getElementById('transport-type').value = appData.transportType || 'flight';
+        document.getElementById('transport-detail').value = appData.transportDetail || '';
+      }
+      toggleInternationalFields();
+      updateTripDaysConfig();
+      renderItineraries();
+    }
+
+    function toggleInternationalFields() {
+      const isChecked = document.getElementById('is-internatio
