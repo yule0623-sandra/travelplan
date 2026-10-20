@@ -43,7 +43,7 @@
     input[type="text"], input[type="number"], select, textarea { 
       width: 100%; padding: 10px 14px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 14px; background: #faf9f6; color: var(--wabi-ink); 
     }
-    textarea { resize: vertical; min-height: 80px; }
+    textarea { resize: vertical; min-height: 70px; }
     
     .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .toolbar input { flex: 1; min-width: 220px; }
@@ -60,32 +60,31 @@
     /* 行程清單項目卡片 */
     .itinerary-item { 
       background: #faf9f6; border: 1px solid var(--wabi-line); padding: 18px; border-radius: 12px; margin-bottom: 14px; 
-      cursor: grab; transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .itinerary-item:active { cursor: grabbing; }
-    .itinerary-item.dragging { opacity: 0.4; }
 
     .itinerary-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
     .time-title-group h4 { font-size: 16px; font-weight: 600; color: var(--wabi-ink); margin-bottom: 2px; }
 
-    /* 紅框區塊：整合連結、拖曳排序、編輯、刪除圖示 */
+    /* 紅框區塊：文青簡約風圖示按鈕組 */
     .action-icons-row { display: flex; align-items: center; gap: 6px; }
     .icon-action-btn { 
-      background: #ffffff; border: 1px solid var(--wabi-line); color: var(--wabi-ink); width: 34px; height: 34px; 
-      border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; text-decoration: none;
+      background: #ffffff; border: 1px solid var(--wabi-line); color: var(--wabi-ink); width: 32px; height: 32px; 
+      border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; text-decoration: none;
+      transition: background 0.15s;
     }
     .icon-action-btn:hover { background: #f0ece3; border-color: var(--wabi-muted); }
     .icon-action-btn.danger-icon { color: #a85a48; }
-    .drag-handle { cursor: grab; color: var(--wabi-muted); }
-    .drag-handle:active { cursor: grabbing; }
 
-    /* 綠色區塊：文字行程與自動帶入地址 */
+    /* 綠色區塊：文字行程、必吃必買推薦與備忘欄 */
     .itinerary-content-box { 
-      background: #ffffff; border: 1px solid var(--wabi-line); padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; 
+      background: #ffffff; border: 1px solid var(--wabi-line); padding: 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; 
+      display: flex; flex-direction: column; gap: 8px;
     }
-    .location-info-meta { font-size: 12px; color: var(--wabi-muted); margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+    .location-info-meta { font-size: 12px; color: var(--wabi-muted); display: flex; flex-direction: column; gap: 3px; }
     .map-nav-link { color: var(--wabi-accent); text-decoration: underline; font-weight: 500; cursor: pointer; }
     .map-nav-link:hover { color: #8e583f; }
+    .recommend-badge { display: inline-block; background: #f4eae3; color: var(--wabi-accent); font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 500; width: fit-content; }
+    .memo-section { font-size: 13px; color: var(--wabi-muted); border-top: 1px dashed var(--wabi-line); padding-top: 6px; }
 
     /* 藍色區塊：圖片展示區 */
     .itinerary-image-box { margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--wabi-line); max-height: 220px; background: #eee; }
@@ -167,7 +166,7 @@
 
   <!-- 新增/編輯行程互動小視窗 -->
   <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,42,41,0.4); justify-content:center; align-items:center; z-index:999; backdrop-filter: blur(2px);">
-    <div style="background:var(--wabi-card); padding:28px; border-radius:var(--radius); width:90%; max-width:480px; border: 1px solid var(--wabi-line);">
+    <div style="background:var(--wabi-card); padding:28px; border-radius:var(--radius); width:90%; max-width:480px; border: 1px solid var(--wabi-line); max-height: 90vh; overflow-y: auto;">
       <h3 id="modal-title" style="margin-bottom: 16px; font-family: Georgia, serif; font-weight: normal;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
       
@@ -183,13 +182,23 @@
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>地點搜尋與名稱（自動帶入營業時間與地址）</label>
-        <input type="text" id="item-title" placeholder="例如：清水寺 或 淺草雷門">
+        <label>地點名稱（如為景點／餐廳將自動帶入資訊）</label>
+        <input type="text" id="item-title" placeholder="例如：出發！ 或 清水寺、老爹蔬食">
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>文字行程 / 備註說明（若空白則自動隱藏）</label>
+        <label>文字行程 / 備註描述（若空白自動隱藏）</label>
         <textarea id="item-desc" placeholder="例如：品嚐人氣抹茶甜點，欣賞日式庭園建築"></textarea>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label>熱門必吃 / 必買推薦（若空白自動隱藏）</label>
+        <input type="text" id="item-recommend" placeholder="例如：招牌抹茶泡芙、手工紀念品">
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label>備忘欄（自行填寫，若空白自動隱藏）</label>
+        <input type="text" id="item-memo" placeholder="例如：記得提前預約、攜帶門票憑證">
       </div>
 
       <div style="margin-bottom: 16px;">
@@ -327,7 +336,7 @@
       const items = appData.itineraries[dayKey];
       const filtered = items.filter(item => 
         item.title.toLowerCase().includes(filterKeyword.toLowerCase()) || 
-        item.desc.toLowerCase().includes(filterKeyword.toLowerCase()) ||
+        (item.desc && item.desc.toLowerCase().includes(filterKeyword.toLowerCase())) ||
         item.time.toLowerCase().includes(filterKeyword.toLowerCase())
       );
 
@@ -340,35 +349,49 @@
         const realIndex = items.indexOf(item);
         const div = document.createElement('div');
         div.className = 'itinerary-item';
-        div.draggable = true;
-        div.dataset.index = realIndex;
         
+        // 判斷是否為實際店家地點（排除「出發」、「集合」等非地點項目）
+        const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
         const simulatedAddress = `地址：${item.title} 附近熱門商圈`;
         const simulatedHours = `營業時間：09:00 - 18:00`;
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title)}`;
+
+        // 檢查綠色區塊內部是否有任何內容可顯示
+        const hasContent = item.desc || isPlace || item.recommend || item.memo;
 
         div.innerHTML = `
           <div class="itinerary-header">
             <div class="time-title-group">
               <h4>🕒 ${item.time} ｜ ${item.title}</h4>
             </div>
-            <!-- 紅框區塊：連結、拖曳排序、編輯、刪除圖示按鈕 -->
+            <!-- 紅框區塊：文青風格圖示按鈕組（包含上下排序按鈕、編輯、刪除、連結） -->
             <div class="action-icons-row">
               ${item.link ? `<a href="${item.link}" target="_blank" class="icon-action-btn" title="外部連結">🔗</a>` : ''}
-              <span class="icon-action-btn drag-handle" title="按住拖曳排序">↕️</span>
+              <button class="icon-action-btn move-up-btn" data-index="${realIndex}" title="往上移">⬆️</button>
+              <button class="icon-action-btn move-down-btn" data-index="${realIndex}" title="往下移">⬇️</button>
               <button class="icon-action-btn edit-btn" data-index="${realIndex}" title="編輯行程">✏️</button>
               <button class="icon-action-btn danger-icon delete-btn" data-index="${realIndex}" title="刪除行程">🗑️</button>
             </div>
           </div>
 
-          <!-- 綠色區塊：若無備註與地點則自動留空不呈現 -->
-          ${(item.desc || item.title) ? `
+          <!-- 綠色區塊：若無任何內容則自動留空隱藏 -->
+          ${hasContent ? `
             <div class="itinerary-content-box">
-              ${item.desc ? `<div style="font-weight: 500; margin-bottom: 4px;">${item.desc}</div>` : ''}
-              <div class="location-info-meta">
-                <span>⏱ ${simulatedHours}</span>
-                <span>📍 <a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${simulatedAddress} (點擊一鍵導航)</a></span>
-              </div>
+              ${item.desc ? `<div style="font-weight: 500;">${item.desc}</div>` : ''}
+              
+              <!-- 若為店家地點才顯示營業時間與地圖導航，像「出發！」則自動隱藏 -->
+              ${isPlace ? `
+                <div class="location-info-meta">
+                  <span>⏱ ${simulatedHours}</span>
+                  <span>📍 <a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${simulatedAddress} (點擊一鍵導航)</a></span>
+                </div>
+              ` : ''}
+
+              <!-- 推薦必吃必買（若空白自動隱藏） -->
+              ${item.recommend ? `<div class="recommend-badge">✨ 推薦：${item.recommend}</div>` : ''}
+
+              <!-- 備忘欄（若空白自動隱藏） -->
+              ${item.memo ? `<div class="memo-section">📝 備忘：${item.memo}</div>` : ''}
             </div>
           ` : ''}
 
@@ -380,29 +403,16 @@
           ` : ''}
         `;
 
-        // 拖曳排序事件綁定
-        div.addEventListener('dragstart', (e) => {
-          e.dataTransfer.setData('text/plain', realIndex);
-          div.classList.add('dragging');
-        });
-        div.addEventListener('dragend', () => {
-          div.classList.remove('dragging');
-        });
-        div.addEventListener('dragover', (e) => {
-          e.preventDefault();
-        });
-        div.addEventListener('drop', (e) => {
-          e.preventDefault();
-          const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-          const targetIndex = realIndex;
-          if (draggedIndex !== targetIndex) {
-            reorderItems(draggedIndex, targetIndex);
-          }
-        });
-
         listContainer.appendChild(div);
       });
 
+      // 綁定按鈕事件
+      listContainer.querySelectorAll('.move-up-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => moveItem(parseInt(e.currentTarget.dataset.index), -1));
+      });
+      listContainer.querySelectorAll('.move-down-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => moveItem(parseInt(e.currentTarget.dataset.index), 1));
+      });
       listContainer.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', (e) => openEditModal(parseInt(e.currentTarget.dataset.index)));
       });
@@ -411,11 +421,16 @@
       });
     }
 
-    function reorderItems(fromIndex, toIndex) {
+    function moveItem(index, direction) {
       const dayKey = `day_${currentDay}`;
       const items = appData.itineraries[dayKey];
-      const [movedItem] = items.splice(fromIndex, 1);
-      items.splice(toIndex, 0, movedItem);
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= items.length) return;
+      
+      const temp = items[index];
+      items[index] = items[targetIndex];
+      items[targetIndex] = temp;
+
       saveAppData();
       renderItineraries();
     }
@@ -427,6 +442,8 @@
       document.getElementById('item-link').value = '';
       document.getElementById('item-title').value = '';
       document.getElementById('item-desc').value = '';
+      document.getElementById('item-recommend').value = '';
+      document.getElementById('item-memo').value = '';
       document.getElementById('item-image').value = '';
       document.getElementById('modal-backdrop').style.display = 'flex';
     }
@@ -440,6 +457,8 @@
       document.getElementById('item-link').value = item.link || '';
       document.getElementById('item-title').value = item.title || '';
       document.getElementById('item-desc').value = item.desc || '';
+      document.getElementById('item-recommend').value = item.recommend || '';
+      document.getElementById('item-memo').value = item.memo || '';
       document.getElementById('item-image').value = item.image || '';
       document.getElementById('modal-backdrop').style.display = 'flex';
     }
@@ -454,6 +473,8 @@
       const link = document.getElementById('item-link').value;
       const title = document.getElementById('item-title').value;
       const desc = document.getElementById('item-desc').value;
+      const recommend = document.getElementById('item-recommend').value;
+      const memo = document.getElementById('item-memo').value;
       const image = document.getElementById('item-image').value;
 
       if (!title && !desc) return alert('請至少輸入行程名稱或備註描述');
@@ -461,7 +482,7 @@
       const dayKey = `day_${currentDay}`;
       if (!appData.itineraries[dayKey]) appData.itineraries[dayKey] = [];
 
-      const itemData = { time, link, title, desc, image };
+      const itemData = { time, link, title, desc, recommend, memo, image };
 
       if (index === -1) {
         appData.itineraries[dayKey].push(itemData);
