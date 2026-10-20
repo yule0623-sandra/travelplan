@@ -30,11 +30,21 @@
     #login-screen input { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 15px; background: #faf9f6; }
     
     #app-screen { display: none; }
+    
+    /* 頂部導覽列：調整右側區塊為上下置中與適當間距 */
     header { 
       display: flex; justify-content: space-between; align-items: center; background: var(--wabi-card); 
       padding: 20px 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 24px; 
     }
-    .brand-title { font-family: Georgia, serif; font-size: 18px; letter-spacing: 1.5px; }
+    .brand-title { font-family: Georgia, serif; font-size: 18px; letter-spacing: 1.5px; line-height: 1.2; }
+    
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px; /* 讓上下按鈕／標籤保持舒適的間距，不黏在一起 */
+    }
     .user-badge { font-weight: 500; font-size: 13px; color: var(--wabi-primary); background: #f0f2ee; padding: 6px 14px; border-radius: 20px; }
 
     .card { background: var(--wabi-card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 20px; }
@@ -57,7 +67,6 @@
     .day-tab { padding: 8px 16px; border-radius: 20px; background: #eae6df; color: var(--wabi-muted); border: none; cursor: pointer; white-space: nowrap; font-weight: 500; font-size: 13px; }
     .day-tab.active { background: var(--wabi-primary); color: white; }
 
-    /* 行程清單項目卡片 */
     .itinerary-item { 
       background: #faf9f6; border: 1px solid var(--wabi-line); padding: 18px; border-radius: 12px; margin-bottom: 14px; 
     }
@@ -65,7 +74,6 @@
     .itinerary-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
     .time-title-group h4 { font-size: 16px; font-weight: 600; color: var(--wabi-ink); margin-bottom: 2px; }
 
-    /* 紅框區塊：文青風格圖示按鈕組 */
     .action-icons-row { display: flex; align-items: center; gap: 6px; }
     .icon-action-btn { 
       background: #ffffff; border: 1px solid var(--wabi-line); color: var(--wabi-ink); width: 32px; height: 32px; 
@@ -75,7 +83,6 @@
     .icon-action-btn:hover { background: #f0ece3; border-color: var(--wabi-muted); }
     .icon-action-btn.danger-icon { color: #a85a48; }
 
-    /* 綠色區塊：文字行程、必吃必買推薦與備忘欄 */
     .itinerary-content-box { 
       background: #ffffff; border: 1px solid var(--wabi-line); padding: 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; 
       display: flex; flex-direction: column; gap: 8px;
@@ -86,7 +93,6 @@
     .recommend-badge { display: inline-block; background: #f4eae3; color: var(--wabi-accent); font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 500; width: fit-content; }
     .memo-section { font-size: 13px; color: var(--wabi-muted); border-top: 1px dashed var(--wabi-line); padding-top: 6px; }
 
-    /* 藍色區塊：圖片展示區 */
     .itinerary-image-box { margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--wabi-line); max-height: 220px; background: #eee; }
     .itinerary-image-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
   </style>
@@ -104,13 +110,15 @@
   <!-- 主應用介面 -->
   <div id="app-screen" class="max-w-4xl">
     <header>
+      <!-- 紅色圈起來的標題區塊（可自由修改文字） -->
       <div>
         <div class="brand-title">TRAVEL JOURNAL</div>
         <small style="color: var(--wabi-muted);">日式侘寂風・智能行程規劃</small>
       </div>
-      <div>
+      <!-- 右側用戶名與切換按鈕（靠右、上下置中、有適當間距） -->
+      <div class="header-right">
         <span class="user-badge" id="current-user-display">使用者</span>
-        <button class="secondary" id="logout-btn" style="margin-left: 10px; padding: 4px 12px; font-size: 12px;">切換帳號</button>
+        <button class="secondary" id="logout-btn" style="padding: 4px 12px; font-size: 12px;">切換帳號</button>
       </div>
     </header>
 
@@ -166,7 +174,6 @@
 
   <!-- 新增/編輯行程互動小視窗 -->
   <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,42,41,0.4); justify-content:center; align-items:center; z-index:999; backdrop-filter: blur(2px);">
-    <!-- 調整 max-height 並加入 padding-bottom，避開右下角 Netlify 浮水印遮擋 -->
     <div style="background:var(--wabi-card); padding:28px; border-radius:var(--radius); width:90%; max-width:480px; border: 1px solid var(--wabi-line); max-height: 85vh; overflow-y: auto;">
       <h3 id="modal-title" style="margin-bottom: 16px; font-family: Georgia, serif; font-weight: normal;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
@@ -207,7 +214,6 @@
         <input type="text" id="item-image" placeholder="https://... (圖片網址)">
       </div>
 
-      <!-- 底部按鈕區加入額外底部安全距離，徹底防止被浮水印擋住 -->
       <div style="display: flex; gap: 10px; justify-content: flex-end; padding-bottom: 20px;">
         <button class="secondary" id="modal-cancel-btn">取消</button>
         <button id="modal-save-btn">儲存行程</button>
@@ -352,13 +358,11 @@
         const div = document.createElement('div');
         div.className = 'itinerary-item';
         
-        // 判斷是否為實際店家地點（排除「出發」、「集合」、「賦歸」等非地點項目）
         const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
         const simulatedAddress = `地址：${item.title} 附近熱門商圈`;
         const simulatedHours = `營業時間：09:00 - 18:00`;
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title)}`;
 
-        // 檢查綠色區塊內部是否有任何內容可顯示
         const hasContent = item.desc || isPlace || item.recommend || item.memo;
 
         div.innerHTML = `
@@ -366,22 +370,19 @@
             <div class="time-title-group">
               <h4>🕒 ${item.time} ｜ ${item.title}</h4>
             </div>
-            <!-- 紅框區塊：文青風格圖示按鈕組（上下排序、編輯、刪除、連結） -->
             <div class="action-icons-row">
               ${item.link ? `<a href="${item.link}" target="_blank" class="icon-action-btn" title="外部連結">🔗</a>` : ''}
-              <button class="icon-action-btn move-up-btn" data-index="${realIndex}" title="往上移">⬆️</button>
-              <button class="icon-action-btn move-down-btn" data-index="${realIndex}" title="往下移">⬇️</button>
+              <button class="icon-action-btn move-up-btn" data-index="${realIndex}" title="往上移">🔺</button>
+              <button class="icon-action-btn move-down-btn" data-index="${realIndex}" title="往下移">🔻</button>
               <button class="icon-action-btn edit-btn" data-index="${realIndex}" title="編輯行程">✏️</button>
               <button class="icon-action-btn danger-icon delete-btn" data-index="${realIndex}" title="刪除行程">🗑️</button>
             </div>
           </div>
 
-          <!-- 綠色區塊：若無任何內容則自動留空隱藏 -->
           ${hasContent ? `
             <div class="itinerary-content-box">
               ${item.desc ? `<div style="font-weight: 500;">${item.desc}</div>` : ''}
               
-              <!-- 若為店家地點才顯示營業時間與地圖導航，像「出發！」則自動隱藏 -->
               ${isPlace ? `
                 <div class="location-info-meta">
                   <span>⏱ ${simulatedHours}</span>
@@ -389,15 +390,12 @@
                 </div>
               ` : ''}
 
-              <!-- 推薦必吃必買（若空白自動隱藏） -->
               ${item.recommend ? `<div class="recommend-badge">✨ 推薦：${item.recommend}</div>` : ''}
 
-              <!-- 備忘欄（若空白自動隱藏） -->
               ${item.memo ? `<div class="memo-section">📝 備忘：${item.memo}</div>` : ''}
             </div>
           ` : ''}
 
-          <!-- 藍色區塊：圖片展示區（若無附圖則不呈現） -->
           ${item.image ? `
             <div class="itinerary-image-box">
               <img src="${item.image}" alt="行程圖片" onerror="this.style.display='none'">
@@ -408,7 +406,6 @@
         listContainer.appendChild(div);
       });
 
-      // 綁定按鈕事件
       listContainer.querySelectorAll('.move-up-btn').forEach(btn => {
         btn.addEventListener('click', (e) => moveItem(parseInt(e.currentTarget.dataset.index), -1));
       });
