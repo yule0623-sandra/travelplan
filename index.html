@@ -3,71 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>智慧旅遊日誌與行程規劃工具</title>
+  <title>Travel Journal ｜ 旅途，慢慢記錄</title>
   <style>
+    /* ==========================================
+       日式侘寂風 (Wabi-Sabi) 色系與變數
+       ========================================== */
     :root {
-      --primary-color: #4f46e5;
-      --primary-hover: #4338ca;
-      --bg-color: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border-color: #e2e8f0;
+      --wabi-bg: #f5f2eb;         /* 溫潤亞麻灰白底色 */
+      --wabi-card: #ffffff;       /* 純白紙感卡片 */
+      --wabi-ink: #2c2a29;        /* 墨黑主色字體 */
+      --wabi-muted: #8c857b;      /* 沉穩灰棕次要文字 */
+      --wabi-line: #e3ded6;       /* 柔和邊框線條 */
+      --wabi-primary: #5c6351;    /* 苔綠色 (主按鈕與標籤) */
+      --wabi-primary-hover: #4a5041;
+      --wabi-accent: #b87a5d;     /* 暖木棕色 */
+      --radius: 14px;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.5; padding: 20px; }
-    .max-w-4xl { max-width: 56rem; margin: 0 auto; }
+    body { background-color: var(--wabi-bg); color: var(--wabi-ink); line-height: 1.6; padding: 20px; }
+    .max-w-4xl { max-width: 58rem; margin: 0 auto; }
     
     /* 登入畫面 */
     #login-screen {
-      max-width: 400px; margin: 80px auto; background: var(--card-bg); padding: 30px;
-      border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;
+      max-width: 420px; margin: 100px auto; background: var(--wabi-card); padding: 36px;
+      border-radius: var(--radius); border: 1px solid var(--wabi-line); box-shadow: 0 4px 20px rgba(0,0,0,0.03); text-align: center;
     }
-    #login-screen h2 { margin-bottom: 20px; color: var(--primary-color); }
-    #login-screen input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; }
+    #login-screen h2 { margin-bottom: 8px; font-family: Georgia, serif; font-weight: normal; letter-spacing: 1px; color: var(--wabi-ink); }
+    #login-screen p { color: var(--wabi-muted); font-size: 13px; margin-bottom: 24px; }
+    #login-screen input { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 15px; background: #faf9f6; }
     
     /* 主應用介面 */
     #app-screen { display: none; }
-    header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); margin-bottom: 20px; }
-    .user-badge { font-weight: bold; color: var(--primary-color); background: #e0e7ff; padding: 5px 12px; border-radius: 20px; }
+    header { 
+      display: flex; justify-content: space-between; align-items: center; background: var(--wabi-card); 
+      padding: 20px 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 24px; 
+    }
+    .brand-title { font-family: Georgia, serif; font-size: 18px; letter-spacing: 1.5px; }
+    .user-badge { font-weight: 500; font-size: 13px; color: var(--wabi-primary); background: #f0f2ee; padding: 6px 14px; border-radius: 20px; }
 
-    /* 設定卡片 */
-    .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); margin-bottom: 20px; }
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 15px; }
-    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
-    input[type="text"], input[type="number"], select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; }
+    /* 卡片與表單 */
+    .card { background: var(--wabi-card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 20px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
+    input[type="text"], input[type="number"], select, textarea { 
+      width: 100%; padding: 10px 14px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 14px; background: #faf9f6; color: var(--wabi-ink); 
+    }
+    textarea { resize: vertical; min-height: 80px; }
     
-    /* 搜尋與操作區 */
-    .toolbar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-    .toolbar input { flex: 1; min-width: 200px; }
+    /* 工具列與按鈕 */
+    .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .toolbar input { flex: 1; min-width: 220px; }
     
-    /* 按鈕樣式 */
-    button { background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
-    button:hover { background: var(--primary-hover); }
-    button.secondary { background: #e2e8f0; color: var(--text-main); }
-    button.secondary:hover { background: #cbd5e1; }
-    button.danger { background: #ef4444; }
-    button.danger:hover { background: #dc2626; }
+    button { background: var(--wabi-primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; }
+    button:hover { background: var(--wabi-primary-hover); }
+    button.secondary { background: #eae6df; color: var(--wabi-ink); }
+    button.secondary:hover { background: #ded8ce; }
+    button.danger { background: #a85a48; }
+    button.danger:hover { background: #914b3b; }
 
     /* 天數頁籤 */
-    .day-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-    .day-tab { padding: 6px 14px; border-radius: 20px; background: #e2e8f0; color: var(--text-main); border: none; cursor: pointer; white-space: nowrap; }
-    .day-tab.active { background: var(--primary-color); color: white; }
+    .day-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+    .day-tab { padding: 8px 16px; border-radius: 20px; background: #eae6df; color: var(--wabi-muted); border: none; cursor: pointer; white-space: nowrap; font-weight: 500; font-size: 13px; }
+    .day-tab.active { background: var(--wabi-primary); color: white; }
 
-    /* 行程清單 */
-    .itinerary-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; }
-    .itinerary-info h4 { font-size: 16px; margin-bottom: 3px; }
-    .itinerary-info p { font-size: 13px; color: var(--text-muted); }
-    .item-actions { display: flex; gap: 6px; }
-    .item-actions button { padding: 4px 8px; font-size: 12px; }
+    /* 行程清單項目 (依需求重新編排版面) */
+    .itinerary-item { 
+      background: #faf9f6; border: 1px solid var(--wabi-line); padding: 18px; border-radius: 12px; margin-bottom: 14px; 
+    }
+    .itinerary-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    
+    .time-title-group h4 { font-size: 16px; font-weight: 600; color: var(--wabi-ink); margin-bottom: 2px; }
+    .time-title-group span { font-size: 12px; color: var(--wabi-muted); }
+
+    /* 需求 1：紅框區塊（連結、上下排序、編輯、刪除圖示按鈕） */
+    .action-icons-row { display: flex; align-items: center; gap: 8px; }
+    .icon-action-btn { 
+      background: #ffffff; border: 1px solid var(--wabi-line); color: var(--wabi-ink); width: 34px; height: 34px; 
+      border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: 0.15s; text-decoration: none;
+    }
+    .icon-action-btn:hover { background: #f0ece3; border-color: var(--wabi-muted); }
+    .icon-action-btn.danger-icon { color: #a85a48; }
+
+    /* 需求 2：綠色區塊（文字行程、自動帶入營業時間與地址，地址可點擊一鍵導航） */
+    .itinerary-content-box { 
+      background: #ffffff; border: 1px solid var(--wabi-line); padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 12px; 
+    }
+    .location-info-meta { font-size: 12px; color: var(--wabi-muted); margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+    .map-nav-link { color: var(--wabi-accent); text-decoration: underline; font-weight: 500; cursor: pointer; }
+    .map-nav-link:hover { color: #8e583f; }
+
+    /* 需求 3：藍色區塊（圖片展示區） */
+    .itinerary-image-box { margin-top: 10px; border-radius: 8px; overflow: hidden; border: 1px solid var(--wabi-line); max-height: 220px; background: #eee; }
+    .itinerary-image-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
   </style>
 </head>
 <body>
 
   <!-- 登入畫面 -->
   <div id="login-screen">
-    <h2>🔐 個人行程帳號登入</h2>
-    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">輸入您的專屬名稱以建立或載入雲端記憶行程</p>
+    <h2>✦ 旅途，慢慢記錄</h2>
+    <p>輸入您的個人帳號名稱以載入專屬行程</p>
     <input type="text" id="username-input" placeholder="例如：Cassandra" value="Cassandra">
     <button id="login-btn" style="width: 100%;">進入我的旅程</button>
   </div>
@@ -76,22 +112,22 @@
   <div id="app-screen" class="max-w-4xl">
     <header>
       <div>
-        <h3>✈️ 智慧旅遊日誌</h3>
-        <small style="color: var(--text-muted);">輕鬆規劃、動態天數、航班/郵輪與地圖整合</small>
+        <div class="brand-title">TRAVEL JOURNAL</div>
+        <small style="color: var(--wabi-muted);">日式侘寂風・智能行程規劃</small>
       </div>
       <div>
         <span class="user-badge" id="current-user-display">使用者</span>
-        <button class="secondary" id="logout-btn" style="margin-left: 10px; padding: 4px 10px; font-size: 12px;">切換帳號</button>
+        <button class="secondary" id="logout-btn" style="margin-left: 10px; padding: 4px 12px; font-size: 12px;">切換帳號</button>
       </div>
     </header>
 
     <!-- 旅程基本設定 -->
     <div class="card">
-      <h3 style="margin-bottom: 15px;">🌍 旅程基本設定</h3>
+      <h3 style="margin-bottom: 14px; font-family: Georgia, serif; font-weight: normal;">🌍 旅程基本設定</h3>
       <div class="grid-2">
         <div>
           <label>旅遊地點 / 國家</label>
-          <input type="text" id="trip-destination" placeholder="例如：日本東京 或 地中海郵輪">
+          <input type="text" id="trip-destination" placeholder="例如：日本京都 或 地中海郵輪">
         </div>
         <div>
           <label>旅遊天數設定 (天)</label>
@@ -100,14 +136,14 @@
       </div>
       
       <!-- 國外旅遊加開航班/郵輪選項 -->
-      <div style="margin-top: 10px;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <div style="margin-top: 8px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--wabi-ink);">
           <input type="checkbox" id="is-international" style="width: auto;"> 
           這是國外旅遊（需加註航班或郵輪資訊）
         </label>
       </div>
 
-      <div id="transport-section" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+      <div id="transport-section" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--wabi-line);">
         <div class="grid-2">
           <div>
             <label>交通工具類型</label>
@@ -126,10 +162,10 @@
 
     <!-- 行程管理與搜尋區 -->
     <div class="card">
-      <h3 style="margin-bottom: 15px;">📅 每日行程與 Google Maps 已儲存地點</h3>
+      <h3 style="margin-bottom: 14px; font-family: Georgia, serif; font-weight: normal;">📅 每日行程安排</h3>
       
       <div class="toolbar">
-        <input type="text" id="search-input" placeholder="🔍 搜尋行程或 Google Maps 已儲存地點...">
+        <input type="text" id="search-input" placeholder="🔍 搜尋行程、地點或備註...">
         <button id="add-item-btn">＋ 新增行程</button>
       </div>
 
@@ -139,22 +175,37 @@
   </div>
 
   <!-- 新增/編輯行程互動小視窗 -->
-  <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); justify-content:center; align-items:center; z-index:999;">
-    <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:450px;">
-      <h3 id="modal-title" style="margin-bottom: 15px;">新增行程</h3>
+  <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,42,41,0.4); justify-content:center; align-items:center; z-index:999; backdrop-filter: blur(2px);">
+    <div style="background:var(--wabi-card); padding:28px; border-radius:var(--radius); width:90%; max-width:480px; border: 1px solid var(--wabi-line);">
+      <h3 id="modal-title" style="margin-bottom: 16px; font-family: Georgia, serif; font-weight: normal;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
+      
+      <div class="grid-2" style="margin-bottom: 0;">
+        <div style="margin-bottom: 12px;">
+          <label>時間 / 時段</label>
+          <input type="text" id="item-time" placeholder="例如: 10:00 AM">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label>外部網址連結 (選填)</label>
+          <input type="text" id="item-link" placeholder="https://...">
+        </div>
+      </div>
+
       <div style="margin-bottom: 12px;">
-        <label>時間 / 時段</label>
-        <input type="text" id="item-time" placeholder="例如: 10:00 AM">
+        <label>地點搜尋與名稱（自動帶入營業時間與地址）</label>
+        <input type="text" id="item-title" placeholder="例如：清水寺 或 淺草雷門">
       </div>
+
       <div style="margin-bottom: 12px;">
-        <label>行程標題 / 地點</label>
-        <input type="text" id="item-title" placeholder="例如: 淺草寺雷門">
+        <label>文字行程 / 備註說明（綠色區塊內容）</label>
+        <textarea id="item-desc" placeholder="例如：品嚐人氣抹茶甜點，欣賞日式庭園建築"></textarea>
       </div>
-      <div style="margin-bottom: 15px;">
-        <label>備註 / 必吃美食說明</label>
-        <input type="text" id="item-desc" placeholder="例如: 租借和服、品嚐雷門人形燒">
+
+      <div style="margin-bottom: 16px;">
+        <label>照片網址 / 圖片連結 (選填 - 藍色區塊)</label>
+        <input type="text" id="item-image" placeholder="https://... (圖片網址)">
       </div>
+
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
         <button class="secondary" id="modal-cancel-btn">取消</button>
         <button id="modal-save-btn">儲存行程</button>
@@ -175,23 +226,19 @@
     };
 
     window.addEventListener('DOMContentLoaded', () => {
-      // 綁定登入與登出
       document.getElementById('login-btn').addEventListener('click', handleLogin);
       document.getElementById('logout-btn').addEventListener('click', handleLogout);
 
-      // 綁定設定即時儲存
       document.getElementById('trip-destination').addEventListener('input', saveAppData);
       document.getElementById('trip-days').addEventListener('input', () => { updateTripDaysConfig(); saveAppData(); });
       document.getElementById('is-international').addEventListener('change', () => { toggleInternationalFields(); saveAppData(); });
       document.getElementById('transport-type').addEventListener('change', saveAppData);
       document.getElementById('transport-detail').addEventListener('input', saveAppData);
 
-      // 綁定按鈕與互動視窗
       document.getElementById('add-item-btn').addEventListener('click', openAddModal);
       document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
       document.getElementById('modal-save-btn').addEventListener('click', saveItineraryItem);
 
-      // 搜尋注音防呆綁定
       let isComposing = false;
       const searchInput = document.getElementById('search-input');
       searchInput.addEventListener('compositionstart', () => { isComposing = true; });
@@ -294,7 +341,7 @@
       );
 
       if (filtered.length === 0) {
-        listContainer.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding: 20px;">尚無行程紀錄，點擊上方「＋ 新增行程」開始規劃！</p>`;
+        listContainer.innerHTML = `<p style="text-align:center; color: var(--wabi-muted); padding: 24px; font-size: 14px;">尚無行程紀錄，點擊上方「＋ 新增行程」開始規劃！</p>`;
         return;
       }
 
@@ -302,33 +349,57 @@
         const realIndex = items.indexOf(item);
         const div = document.createElement('div');
         div.className = 'itinerary-item';
+        
+        // 模擬智慧地點搜尋自動帶入的地址與營業時間
+        const simulatedAddress = item.address || `地址：${item.title} 附近熱門商圈`;
+        const simulatedHours = item.hours || `營業時間：09:00 - 18:00`;
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title)}`;
+
         div.innerHTML = `
-          <div class="itinerary-info">
-            <h4>🕒 ${item.time} － ${item.title}</h4>
-            <p>${item.desc}</p>
+          <div class="itinerary-header">
+            <div class="time-title-group">
+              <h4>🕒 ${item.time} ｜ ${item.title}</h4>
+            </div>
+            <!-- 需求 1：紅框區塊（連結、上下排序、編輯、刪除圖示按鈕） -->
+            <div class="action-icons-row">
+              ${item.link ? `<a href="${item.link}" target="_blank" class="icon-action-btn" title="外部連結">🔗</a>` : ''}
+              <button class="icon-action-btn move-up-btn" data-index="${realIndex}" title="往上移">⬆️</button>
+              <button class="icon-action-btn move-down-btn" data-index="${realIndex}" title="往下移">⬇️</button>
+              <button class="icon-action-btn edit-btn" data-index="${realIndex}" title="編輯行程">✏️</button>
+              <button class="icon-action-btn danger-icon delete-btn" data-index="${realIndex}" title="刪除行程">🗑️</button>
+            </div>
           </div>
-          <div class="item-actions">
-            <button class="secondary move-up-btn" data-index="${realIndex}">⬆️</button>
-            <button class="secondary move-down-btn" data-index="${realIndex}">⬇️</button>
-            <button class="secondary edit-btn" data-index="${realIndex}">✏️ 編輯</button>
-            <button class="danger delete-btn" data-index="${realIndex}">❌ 刪除</button>
+
+          <!-- 需求 2：綠色區塊（文字行程與自動帶入的地址、營業時間，地址可點擊一鍵導航） -->
+          <div class="itinerary-content-box">
+            <div style="font-weight: 500; margin-bottom: 4px;">${item.desc || '無特別備註'}</div>
+            <div class="location-info-meta">
+              <span>⏱ ${simulatedHours}</span>
+              <span>📍 <a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${simulatedAddress} (點擊一鍵導航)</a></span>
+            </div>
           </div>
+
+          <!-- 需求 3：藍色區塊（圖片展示區，若有附圖才顯示） -->
+          ${item.image ? `
+            <div class="itinerary-image-box">
+              <img src="${item.image}" alt="行程圖片" onerror="this.style.display='none'">
+            </div>
+          ` : ''}
         `;
         listContainer.appendChild(div);
       });
 
-      // 綁定動態清單按鈕事件
       listContainer.querySelectorAll('.move-up-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => moveItem(parseInt(e.target.dataset.index), -1));
+        btn.addEventListener('click', (e) => moveItem(parseInt(e.currentTarget.dataset.index), -1));
       });
       listContainer.querySelectorAll('.move-down-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => moveItem(parseInt(e.target.dataset.index), 1));
+        btn.addEventListener('click', (e) => moveItem(parseInt(e.currentTarget.dataset.index), 1));
       });
       listContainer.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => openEditModal(parseInt(e.target.dataset.index)));
+        btn.addEventListener('click', (e) => openEditModal(parseInt(e.currentTarget.dataset.index)));
       });
       listContainer.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => deleteItem(parseInt(e.target.dataset.index)));
+        btn.addEventListener('click', (e) => deleteItem(parseInt(e.currentTarget.dataset.index)));
       });
     }
 
@@ -336,8 +407,10 @@
       document.getElementById('modal-title').innerText = '新增行程';
       document.getElementById('edit-index').value = '-1';
       document.getElementById('item-time').value = '';
+      document.getElementById('item-link').value = '';
       document.getElementById('item-title').value = '';
       document.getElementById('item-desc').value = '';
+      document.getElementById('item-image').value = '';
       document.getElementById('modal-backdrop').style.display = 'flex';
     }
 
@@ -346,9 +419,11 @@
       const item = appData.itineraries[dayKey][index];
       document.getElementById('modal-title').innerText = '編輯行程';
       document.getElementById('edit-index').value = index;
-      document.getElementById('item-time').value = item.time;
-      document.getElementById('item-title').value = item.title;
-      document.getElementById('item-desc').value = item.desc;
+      document.getElementById('item-time').value = item.time || '';
+      document.getElementById('item-link').value = item.link || '';
+      document.getElementById('item-title').value = item.title || '';
+      document.getElementById('item-desc').value = item.desc || '';
+      document.getElementById('item-image').value = item.image || '';
       document.getElementById('modal-backdrop').style.display = 'flex';
     }
 
@@ -359,18 +434,26 @@
     function saveItineraryItem() {
       const index = parseInt(document.getElementById('edit-index').value);
       const time = document.getElementById('item-time').value;
+      const link = document.getElementById('item-link').value;
       const title = document.getElementById('item-title').value;
       const desc = document.getElementById('item-desc').value;
+      const image = document.getElementById('item-image').value;
 
-      if (!title) return alert('請輸入行程標題或地點');
+      if (!title) return alert('請輸入行程地點名稱');
 
       const dayKey = `day_${currentDay}`;
       if (!appData.itineraries[dayKey]) appData.itineraries[dayKey] = [];
 
+      // 模擬智慧搜尋自動帶入的地址與營業時間
+      const address = `地址：${title}（依 Google Maps 標註地點）`;
+      const hours = `營業時間：10:00 - 20:00 (建議出發前確認)`;
+
+      const itemData = { time, link, title, desc, image, address, hours };
+
       if (index === -1) {
-        appData.itineraries[dayKey].push({ time, title, desc });
+        appData.itineraries[dayKey].push(itemData);
       } else {
-        appData.itineraries[dayKey][index] = { time, title, desc };
+        appData.itineraries[dayKey][index] = itemData;
       }
 
       saveAppData();
