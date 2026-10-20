@@ -199,6 +199,11 @@
       </div>
 
       <div style="margin-bottom: 12px;">
+        <label>營業時間（可自行編輯填寫）</label>
+        <input type="text" id="item-hours" placeholder="例如：09:00 - 18:00 (週一公休)">
+      </div>
+
+      <div style="margin-bottom: 12px;">
         <label>文字行程 / 備註描述（若空白自動隱藏）</label>
         <textarea id="item-desc" placeholder="例如：品嚐人氣抹茶甜點，欣賞日式庭園建築"></textarea>
       </div>
@@ -239,16 +244,11 @@
     };
 
     window.addEventListener('DOMContentLoaded', () => {
-      // 強化防呆：直接綁定點擊事件
       const loginBtn = document.getElementById('login-btn');
-      if (loginBtn) {
-        loginBtn.onclick = handleLogin;
-      }
+      if (loginBtn) loginBtn.onclick = handleLogin;
 
       const logoutBtn = document.getElementById('logout-btn');
-      if (logoutBtn) {
-        logoutBtn.onclick = handleLogout;
-      }
+      if (logoutBtn) logoutBtn.onclick = handleLogout;
 
       const tripDest = document.getElementById('trip-destination');
       if (tripDest) tripDest.oninput = saveAppData;
@@ -288,7 +288,6 @@
       const modalSave = document.getElementById('modal-save-btn');
       if (modalSave) modalSave.onclick = saveItineraryItem;
 
-      // 中文注音搜尋防呆
       let isComposing = false;
       const searchInput = document.getElementById('search-input');
       if (searchInput) {
@@ -297,7 +296,6 @@
         searchInput.addEventListener('input', (e) => { if (!isComposing) renderItineraries(e.target.value); });
       }
 
-      // 檢查若已有登入紀錄直接進入
       if (currentUser && currentUser.trim() !== '') {
         initAppScreen();
       }
@@ -438,10 +436,10 @@
         
         const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
         const simulatedAddress = `地址：${item.title} 附近熱門商圈`;
-        const simulatedHours = `營業時間：09:00 - 18:00`;
+        const displayHours = item.hours ? `營業時間：${item.hours}` : `營業時間：09:00 - 18:00`;
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title)}`;
 
-        const hasContent = item.desc || isPlace || item.recommend || item.memo;
+        const hasContent = item.desc || isPlace || item.recommend || item.memo || item.hours;
 
         div.innerHTML = `
           <div class="itinerary-header">
@@ -463,7 +461,7 @@
               
               ${isPlace ? `
                 <div class="location-info-meta">
-                  <span>⏱ ${simulatedHours}</span>
+                  <span>⏱ ${displayHours}</span>
                   <span>📍 <a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${simulatedAddress} (點擊一鍵導航)</a></span>
                 </div>
               ` : ''}
@@ -518,6 +516,7 @@
       document.getElementById('item-time').value = '';
       document.getElementById('item-link').value = '';
       document.getElementById('item-title').value = '';
+      document.getElementById('item-hours').value = '';
       document.getElementById('item-desc').value = '';
       document.getElementById('item-recommend').value = '';
       document.getElementById('item-memo').value = '';
@@ -533,6 +532,7 @@
       document.getElementById('item-time').value = item.time || '';
       document.getElementById('item-link').value = item.link || '';
       document.getElementById('item-title').value = item.title || '';
+      document.getElementById('item-hours').value = item.hours || '';
       document.getElementById('item-desc').value = item.desc || '';
       document.getElementById('item-recommend').value = item.recommend || '';
       document.getElementById('item-memo').value = item.memo || '';
@@ -549,6 +549,7 @@
       const time = document.getElementById('item-time').value;
       const link = document.getElementById('item-link').value;
       const title = document.getElementById('item-title').value;
+      const hours = document.getElementById('item-hours').value;
       const desc = document.getElementById('item-desc').value;
       const recommend = document.getElementById('item-recommend').value;
       const memo = document.getElementById('item-memo').value;
@@ -562,7 +563,7 @@
       const dayKey = `day_${currentDay}`;
       if (!appData.itineraries[dayKey]) appData.itineraries[dayKey] = [];
 
-      const itemData = { time, link, title, desc, recommend, memo, image };
+      const itemData = { time, link, title, hours, desc, recommend, memo, image };
 
       if (index === -1) {
         appData.itineraries[dayKey].push(itemData);
