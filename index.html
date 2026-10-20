@@ -29,7 +29,7 @@
     #login-screen p { color: var(--wabi-muted); font-size: 13px; margin-bottom: 24px; }
     #login-screen input { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 15px; background: #faf9f6; }
     
-    #app-screen { display: none; }
+    .screen-view { display: none; }
     
     header { 
       display: flex; justify-content: space-between; align-items: center; background: var(--wabi-card); 
@@ -61,10 +61,19 @@
     button:hover { background: var(--wabi-primary-hover); }
     button.secondary { background: #eae6df; color: var(--wabi-ink); }
     button.secondary:hover { background: #ded8ce; }
+    button.accent-btn { background: var(--wabi-accent); }
+    button.accent-btn:hover { background: #9e644b; }
 
     .day-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
     .day-tab { padding: 8px 16px; border-radius: 20px; background: #eae6df; color: var(--wabi-muted); border: none; cursor: pointer; white-space: nowrap; font-weight: 500; font-size: 13px; }
     .day-tab.active { background: var(--wabi-primary); color: white; }
+
+    /* 行程庫存卡片格線 */
+    .trip-folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .trip-folder-card { background: #faf9f6; border: 1px solid var(--wabi-line); padding: 20px; border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; }
+    .trip-folder-card:hover { border-color: var(--wabi-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+    .trip-folder-card h4 { font-size: 16px; margin-bottom: 6px; font-family: Georgia, serif; }
+    .trip-folder-card p { font-size: 12px; color: var(--wabi-muted); }
 
     .itinerary-item { 
       background: #faf9f6; border: 1px solid var(--wabi-line); padding: 18px; border-radius: 12px; margin-bottom: 14px; 
@@ -94,6 +103,12 @@
 
     .itinerary-image-box { margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--wabi-line); max-height: 220px; background: #eee; }
     .itinerary-image-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .no-print { display: none !important; }
+      .card { border: none; box-shadow: none; padding: 0; }
+    }
   </style>
 </head>
 <body>
@@ -106,16 +121,43 @@
     <button id="login-btn" type="button" style="width: 100%;">進入我的旅程</button>
   </div>
 
-  <!-- 主應用介面 -->
-  <div id="app-screen" class="max-w-4xl">
-    <header>
+  <!-- 畫面一：行程庫存／資料夾列表頁面 -->
+  <div id="folder-screen" class="screen-view max-w-4xl">
+    <header class="no-print">
       <div>
-        <div class="brand-title" id="display-brand-title">TRAVEL JOURNAL</div>
+        <div class="brand-title">TRAVEL JOURNAL</div>
         <small style="color: var(--wabi-muted);">made by Sandra</small>
       </div>
       <div class="header-right">
-        <span class="user-badge" id="current-user-display">使用者</span>
-        <button class="secondary" id="logout-btn" type="button" style="padding: 4px 12px; font-size: 12px;">切換帳號</button>
+        <span class="user-badge" id="folder-user-display">使用者</span>
+        <button class="secondary" id="folder-logout-btn" type="button" style="padding: 4px 12px; font-size: 12px;">切換帳號</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <h3 style="font-family: Georgia, serif; font-weight: normal;">📂 我的行程庫存（資料夾）</h3>
+        <div style="display: flex; gap: 10px;">
+          <button class="secondary" id="import-trip-btn" type="button">📥 匯入好友行程</button>
+          <button id="create-trip-btn" type="button">＋ 建立新行程</button>
+        </div>
+      </div>
+      <div class="trip-folder-grid" id="trip-folder-container"></div>
+    </div>
+  </div>
+
+  <!-- 畫面二：單一行程詳細編輯與檢視頁面 -->
+  <div id="detail-screen" class="screen-view max-w-4xl">
+    <header class="no-print">
+      <div>
+        <button class="secondary" id="back-to-folders-btn" type="button" style="padding: 6px 14px; font-size: 13px;">⬅️ 返回行程庫存</button>
+      </div>
+      <div class="header-right">
+        <span class="user-badge" id="detail-user-display">使用者</span>
+        <div style="display: flex; gap: 8px; margin-top: 4px;">
+          <button class="secondary" id="export-pdf-btn" type="button" style="padding: 4px 10px; font-size: 11px;">📄 匯出 PDF</button>
+          <button class="accent-btn" id="export-code-btn" type="button" style="padding: 4px 10px; font-size: 11px;">📤 匯出分享碼</button>
+        </div>
       </div>
     </header>
 
@@ -166,7 +208,7 @@
     <div class="card">
       <h3 style="margin-bottom: 14px; font-family: Georgia, serif; font-weight: normal;">📅 每日行程安排</h3>
       
-      <div class="toolbar">
+      <div class="toolbar no-print">
         <input type="text" id="search-input" placeholder="🔍 搜尋行程、地點或備註...">
         <button id="add-item-btn" type="button">＋ 新增行程</button>
       </div>
@@ -232,52 +274,70 @@
 
   <script>
     let currentUser = localStorage.getItem('current_user') || '';
+    let currentTripId = localStorage.getItem('current_trip_id') || '';
     let currentDay = 1;
-    let appData = {
-      destination: '',
+    let tripsList = [];
+    let currentTripData = {
+      id: '',
+      title: '高雄三日遊',
+      destination: '高雄',
       days: 3,
       brandTitle: 'TRAVEL JOURNAL',
       isInternational: false,
       transportType: 'flight',
       transportDetail: '',
-      itineraries: {} 
+      itineraries: {}
     };
 
     window.addEventListener('DOMContentLoaded', () => {
       const loginBtn = document.getElementById('login-btn');
       if (loginBtn) loginBtn.onclick = handleLogin;
 
-      const logoutBtn = document.getElementById('logout-btn');
-      if (logoutBtn) logoutBtn.onclick = handleLogout;
+      const folderLogout = document.getElementById('folder-logout-btn');
+      if (folderLogout) folderLogout.onclick = handleLogout;
 
+      const createTripBtn = document.getElementById('create-trip-btn');
+      if (createTripBtn) createTripBtn.onclick = createNewTrip;
+
+      const importTripBtn = document.getElementById('import-trip-btn');
+      if (importTripBtn) importTripBtn.onclick = importTripByCode;
+
+      const backFolders = document.getElementById('back-to-folders-btn');
+      if (backFolders) backFolders.onclick = showFolderScreen;
+
+      const exportPdf = document.getElementById('export-pdf-btn');
+      if (exportPdf) exportPdf.onclick = () => window.print();
+
+      const exportCode = document.getElementById('export-code-btn');
+      if (exportCode) exportCode.onclick = exportTripCode;
+
+      // 編輯細節即時同步
       const tripDest = document.getElementById('trip-destination');
-      if (tripDest) tripDest.oninput = saveAppData;
+      if (tripDest) tripDest.oninput = saveCurrentTripData;
 
       const tripDays = document.getElementById('trip-days');
       if (tripDays) {
-        tripDays.oninput = () => { updateTripDaysConfig(); saveAppData(); };
+        tripDays.oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
       }
 
       const customBrand = document.getElementById('custom-brand-title');
       if (customBrand) {
         customBrand.oninput = (e) => {
-          appData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
-          const brandEl = document.getElementById('display-brand-title');
-          if (brandEl) brandEl.innerText = appData.brandTitle;
-          saveAppData();
+          currentTripData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
+          saveCurrentTripData();
         };
       }
 
       const isInter = document.getElementById('is-international');
       if (isInter) {
-        isInter.onchange = () => { toggleInternationalFields(); saveAppData(); };
+        isInter.onchange = () => { toggleInternationalFields(); saveCurrentTripData(); };
       }
 
       const transType = document.getElementById('transport-type');
-      if (transType) transType.onchange = saveAppData;
+      if (transType) transType.onchange = saveCurrentTripData;
 
       const transDetail = document.getElementById('transport-detail');
-      if (transDetail) transDetail.oninput = saveAppData;
+      if (transDetail) transDetail.oninput = saveCurrentTripData;
 
       const addItemBtn = document.getElementById('add-item-btn');
       if (addItemBtn) addItemBtn.onclick = openAddModal;
@@ -297,7 +357,7 @@
       }
 
       if (currentUser && currentUser.trim() !== '') {
-        initAppScreen();
+        initUserSession();
       }
     });
 
@@ -310,82 +370,189 @@
       }
       currentUser = input;
       localStorage.setItem('current_user', currentUser);
-      initAppScreen();
+      initUserSession();
     }
 
-    function initAppScreen() {
-      const loginScreen = document.getElementById('login-screen');
-      const appScreen = document.getElementById('app-screen');
-      const userDisplay = document.getElementById('current-user-display');
-
-      if (loginScreen) loginScreen.style.display = 'none';
-      if (appScreen) appScreen.style.display = 'block';
-      if (userDisplay) userDisplay.innerText = currentUser;
-      loadAppData();
+    function initUserSession() {
+      document.getElementById('login-screen').style.display = 'none';
+      loadUserTrips();
+      if (currentTripId && tripsList.some(t => t.id === currentTripId)) {
+        loadTripDetail(currentTripId);
+      } else {
+        showFolderScreen();
+      }
     }
 
     function handleLogout() {
       localStorage.removeItem('current_user');
+      localStorage.removeItem('current_trip_id');
       location.reload();
     }
 
-    function saveAppData() {
-      if (!currentUser) return;
-      const destEl = document.getElementById('trip-destination');
-      const daysEl = document.getElementById('trip-days');
-      const brandEl = document.getElementById('custom-brand-title');
-      const interEl = document.getElementById('is-international');
-      const tTypeEl = document.getElementById('transport-type');
-      const tDetailEl = document.getElementById('transport-detail');
-
-      appData.destination = destEl ? destEl.value : '';
-      appData.days = daysEl ? (parseInt(daysEl.value) || 3) : 3;
-      appData.brandTitle = brandEl ? (brandEl.value || 'TRAVEL JOURNAL') : 'TRAVEL JOURNAL';
-      appData.isInternational = interEl ? interEl.checked : false;
-      appData.transportType = tTypeEl ? tTypeEl.value : 'flight';
-      appData.transportDetail = tDetailEl ? tDetailEl.value : '';
-      
-      localStorage.setItem(`travel_app_data_${currentUser}`, JSON.stringify(appData));
-    }
-
-    function loadAppData() {
-      const saved = localStorage.getItem(`travel_app_data_${currentUser}`);
+    function loadUserTrips() {
+      const saved = localStorage.getItem(`travel_trips_list_${currentUser}`);
       if (saved) {
         try {
-          appData = JSON.parse(saved);
-          const destEl = document.getElementById('trip-destination');
-          const daysEl = document.getElementById('trip-days');
-          const brandInputEl = document.getElementById('custom-brand-title');
-          const brandDisplayEl = document.getElementById('display-brand-title');
-          const interEl = document.getElementById('is-international');
-          const tTypeEl = document.getElementById('transport-type');
-          const tDetailEl = document.getElementById('transport-detail');
-
-          if (destEl) destEl.value = appData.destination || '';
-          if (daysEl) daysEl.value = appData.days || 3;
-          if (brandInputEl) brandInputEl.value = appData.brandTitle || 'TRAVEL JOURNAL';
-          if (brandDisplayEl) brandDisplayEl.innerText = appData.brandTitle || 'TRAVEL JOURNAL';
-          if (interEl) interEl.checked = !!appData.isInternational;
-          if (tTypeEl) tTypeEl.value = appData.transportType || 'flight';
-          if (tDetailEl) tDetailEl.value = appData.transportDetail || '';
-        } catch(e) {}
+          tripsList = JSON.parse(saved);
+        } catch(e) { tripsList = []; }
       }
+      if (tripsList.length === 0) {
+        // 預設建立第一個行程
+        const defaultTrip = {
+          id: 'trip_' + Date.now(),
+          title: '高雄三日遊',
+          destination: '高雄',
+          days: 3,
+          brandTitle: 'TRAVEL JOURNAL',
+          isInternational: false,
+          transportType: 'flight',
+          transportDetail: '',
+          itineraries: {}
+        };
+        tripsList.push(defaultTrip);
+        saveUserTrips();
+      }
+    }
+
+    function saveUserTrips() {
+      localStorage.setItem(`travel_trips_list_${currentUser}`, JSON.stringify(tripsList));
+    }
+
+    function showFolderScreen() {
+      document.getElementById('detail-screen').style.display = 'none';
+      document.getElementById('folder-screen').style.display = 'block';
+      document.getElementById('folder-user-display').innerText = currentUser;
+      localStorage.removeItem('current_trip_id');
+      renderFolderList();
+    }
+
+    function renderFolderList() {
+      const container = document.getElementById('trip-folder-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      tripsList.forEach((trip) => {
+        const card = document.createElement('div');
+        card.className = 'trip-folder-card';
+        card.innerHTML = `
+          <h4>📁 ${trip.title}</h4>
+          <p>目的地：${trip.destination || '未設定'} ｜ ${trip.days} 天行程</p>
+          <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;">
+            <button class="secondary delete-trip-btn" type="button" data-id="${trip.id}" style="padding: 2px 8px; font-size: 11px; background: #e8dfd8;" title="刪除行程">🗑️</button>
+          </div>
+        `;
+        card.onclick = (e) => {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+          loadTripDetail(trip.id);
+        };
+        
+        card.querySelector('.delete-trip-btn').onclick = (e) => {
+          e.stopPropagation();
+          deleteTrip(trip.id);
+        };
+
+        container.appendChild(card);
+      });
+    }
+
+    function createNewTrip() {
+      const title = prompt('請輸入新行程名稱（例如：東京賞楓五日遊）：', '新旅遊行程');
+      if (!title) return;
+      const newTrip = {
+        id: 'trip_' + Date.now(),
+        title: title,
+        destination: title,
+        days: 3,
+        brandTitle: 'TRAVEL JOURNAL',
+        isInternational: false,
+        transportType: 'flight',
+        transportDetail: '',
+        itineraries: {}
+      };
+      tripsList.push(newTrip);
+      saveUserTrips();
+      loadTripDetail(newTrip.id);
+    }
+
+    function deleteTrip(id) {
+      if (tripsList.length <= 1) {
+        alert('至少需保留一個行程！');
+        return;
+      }
+      if (!confirm('確定要刪除這個行程資料夾嗎？')) return;
+      tripsList = tripsList.filter(t => t.id !== id);
+      saveUserTrips();
+      renderFolderList();
+    }
+
+    function loadTripDetail(id) {
+      const trip = tripsList.find(t => t.id === id);
+      if (!trip) return;
+      currentTripId = id;
+      localStorage.setItem('current_trip_id', currentTripId);
+      currentTripData = JSON.parse(JSON.stringify(trip));
+
+      document.getElementById('folder-screen').style.display = 'none';
+      document.getElementById('detail-screen').style.display = 'block';
+      document.getElementById('detail-user-display').innerText = currentUser;
+
+      document.getElementById('trip-destination').value = currentTripData.destination || '';
+      document.getElementById('trip-days').value = currentTripData.days || 3;
+      document.getElementById('custom-brand-title').value = currentTripData.brandTitle || 'TRAVEL JOURNAL';
+      document.getElementById('is-international').checked = !!currentTripData.isInternational;
+      document.getElementById('transport-type').value = currentTripData.transportType || 'flight';
+      document.getElementById('transport-detail').value = currentTripData.transportDetail || '';
+
       toggleInternationalFields();
       updateTripDaysConfig();
       renderItineraries();
     }
 
-    function toggleInternationalFields() {
-      const interEl = document.getElementById('is-international');
-      const transSec = document.getElementById('transport-section');
-      if (interEl && transSec) {
-        transSec.style.display = interEl.checked ? 'block' : 'none';
+    function saveCurrentTripData() {
+      if (!currentTripId) return;
+      currentTripData.destination = document.getElementById('trip-destination').value;
+      currentTripData.title = currentTripData.destination ? `${currentTripData.destination}行程` : '未命名行程';
+      currentTripData.days = parseInt(document.getElementById('trip-days').value) || 3;
+      currentTripData.brandTitle = document.getElementById('custom-brand-title').value || 'TRAVEL JOURNAL';
+      currentTripData.isInternational = document.getElementById('is-international').checked;
+      currentTripData.transportType = document.getElementById('transport-type').value;
+      currentTripData.transportDetail = document.getElementById('transport-detail').value;
+
+      const index = tripsList.findIndex(t => t.id === currentTripId);
+      if (index !== -1) {
+        tripsList[index] = JSON.parse(JSON.stringify(currentTripData));
+        saveUserTrips();
       }
     }
 
+    function exportTripCode() {
+      const codeStr = btoa(encodeURIComponent(JSON.stringify(currentTripData)));
+      prompt('這是您的行程分享碼，請複製並傳給好友：', codeStr);
+    }
+
+    function importTripByCode() {
+      const codeStr = prompt('請貼上好友傳給您的行程分享碼：');
+      if (!codeStr) return;
+      try {
+        const decoded = JSON.parse(decodeURIComponent(atob(codeStr)));
+        decoded.id = 'trip_' + Date.now();
+        decoded.title = decoded.title + ' (好友分享)';
+        tripsList.push(decoded);
+        saveUserTrips();
+        renderFolderList();
+        alert('成功匯入好友的行程！');
+      } catch(e) {
+        alert('分享碼格式錯誤，無法匯入！');
+      }
+    }
+
+    function toggleInternationalFields() {
+      const isChecked = document.getElementById('is-international').checked;
+      document.getElementById('transport-section').style.display = isChecked ? 'block' : 'none';
+    }
+
     function updateTripDaysConfig() {
-      const daysEl = document.getElementById('trip-days');
-      const totalDays = daysEl ? (parseInt(daysEl.value) || 1) : 1;
+      const totalDays = parseInt(document.getElementById('trip-days').value) || 1;
       const container = document.getElementById('day-tabs-container');
       if (!container) return;
 
@@ -413,11 +580,11 @@
       listContainer.innerHTML = '';
       
       const dayKey = `day_${currentDay}`;
-      if (!appData.itineraries[dayKey]) {
-        appData.itineraries[dayKey] = [];
+      if (!currentTripData.itineraries[dayKey]) {
+        currentTripData.itineraries[dayKey] = [];
       }
 
-      const items = appData.itineraries[dayKey];
+      const items = currentTripData.itineraries[dayKey];
       const filtered = items.filter(item => 
         item.title.toLowerCase().includes(filterKeyword.toLowerCase()) || 
         (item.desc && item.desc.toLowerCase().includes(filterKeyword.toLowerCase())) ||
@@ -446,7 +613,7 @@
             <div class="time-title-group">
               <h4>🕒 ${item.time} ｜ ${item.title}</h4>
             </div>
-            <div class="action-icons-row">
+            <div class="action-icons-row no-print">
               ${item.link ? `<a href="${item.link}" target="_blank" class="icon-action-btn" title="外部連結">🔗</a>` : ''}
               <button class="icon-action-btn move-up-btn" type="button" data-index="${realIndex}" title="往上移">🔺</button>
               <button class="icon-action-btn move-down-btn" type="button" data-index="${realIndex}" title="往下移">🔻</button>
@@ -498,7 +665,7 @@
 
     function moveItem(index, direction) {
       const dayKey = `day_${currentDay}`;
-      const items = appData.itineraries[dayKey];
+      const items = currentTripData.itineraries[dayKey];
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= items.length) return;
       
@@ -506,7 +673,7 @@
       items[index] = items[targetIndex];
       items[targetIndex] = temp;
 
-      saveAppData();
+      saveCurrentTripData();
       renderItineraries();
     }
 
@@ -526,7 +693,7 @@
 
     function openEditModal(index) {
       const dayKey = `day_${currentDay}`;
-      const item = appData.itineraries[dayKey][index];
+      const item = currentTripData.itineraries[dayKey][index];
       document.getElementById('modal-title').innerText = '編輯行程';
       document.getElementById('edit-index').value = index;
       document.getElementById('item-time').value = item.time || '';
@@ -561,17 +728,17 @@
       }
 
       const dayKey = `day_${currentDay}`;
-      if (!appData.itineraries[dayKey]) appData.itineraries[dayKey] = [];
+      if (!currentTripData.itineraries[dayKey]) currentTripData.itineraries[dayKey] = [];
 
       const itemData = { time, link, title, hours, desc, recommend, memo, image };
 
       if (index === -1) {
-        appData.itineraries[dayKey].push(itemData);
+        currentTripData.itineraries[dayKey].push(itemData);
       } else {
-        appData.itineraries[dayKey][index] = itemData;
+        currentTripData.itineraries[dayKey][index] = itemData;
       }
 
-      saveAppData();
+      saveCurrentTripData();
       closeModal();
       renderItineraries();
     }
@@ -579,8 +746,8 @@
     function deleteItem(index) {
       if (!confirm('確定要刪除這個行程嗎？')) return;
       const dayKey = `day_${currentDay}`;
-      appData.itineraries[dayKey].splice(index, 1);
-      saveAppData();
+      currentTripData.itineraries[dayKey].splice(index, 1);
+      saveCurrentTripData();
       renderItineraries();
     }
   </script>
