@@ -50,7 +50,6 @@
 
     .card { background: var(--wabi-card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 20px; }
     
-    /* 可收合卡片標題列（確保字體永遠維持橫式） */
     .card-header-toggle {
       display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;
     }
@@ -62,7 +61,6 @@
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
     
-    /* 統一所有輸入框（含 date 日期）的大小與排版 */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
       width: 100%; height: 42px; padding: 10px 14px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 14px; background: #faf9f6; color: var(--wabi-ink); 
     }
@@ -78,7 +76,6 @@
     button.accent-btn { background: var(--wabi-accent); }
     button.accent-btn:hover { background: #9e644b; }
 
-    /* 行李清單樣式 */
     .luggage-category-box { background: #faf9f6; border: 1px solid var(--wabi-line); padding: 16px; border-radius: 12px; margin-bottom: 14px; }
     .luggage-cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
     .luggage-items-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
@@ -130,7 +127,6 @@
 </head>
 <body>
 
-  <!-- 登入畫面 -->
   <div id="login-screen">
     <h2>✦ 旅途，慢慢記錄</h2>
     <p>輸入您的個人帳號名稱以載入專屬行程</p>
@@ -138,7 +134,6 @@
     <button id="login-btn" type="button" style="width: 100%;">進入我的旅程</button>
   </div>
 
-  <!-- 畫面一：行程庫存／資料夾列表頁面 -->
   <div id="folder-screen" class="screen-view max-w-4xl">
     <header class="no-print">
       <div>
@@ -163,7 +158,6 @@
     </div>
   </div>
 
-  <!-- 畫面二：單一行程詳細編輯與檢視頁面 -->
   <div id="detail-screen" class="screen-view max-w-4xl">
     <header class="no-print">
       <div class="header-bar-align">
@@ -176,7 +170,6 @@
       </div>
     </header>
 
-    <!-- 區塊一：旅程基本設定 -->
     <div class="card" id="card-basic-settings">
       <div class="card-header-toggle" onclick="toggleCardSection('card-basic-settings', this)">
         <h3>🌍 旅程基本設定</h3>
@@ -227,7 +220,6 @@
       </div>
     </div>
 
-    <!-- 區塊二：行李清單 -->
     <div class="card" id="card-luggage">
       <div class="card-header-toggle" onclick="toggleCardSection('card-luggage', this)">
         <h3>🧳 行李攜帶清單</h3>
@@ -242,7 +234,6 @@
       </div>
     </div>
 
-    <!-- 區塊三：每日行程安排 -->
     <div class="card" id="card-itinerary">
       <div class="card-header-toggle" onclick="toggleCardSection('card-itinerary', this)">
         <h3>📅 每日行程安排</h3>
@@ -260,13 +251,11 @@
     </div>
   </div>
 
-  <!-- 新增/編輯行程互動視窗 -->
   <div id="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,42,41,0.4); justify-content:center; align-items:center; z-index:999; backdrop-filter: blur(2px);">
     <div style="background:var(--wabi-card); padding:28px; border-radius:var(--radius); width:90%; max-width:480px; border: 1px solid var(--wabi-line); max-height: 85vh; overflow-y: auto;">
       <h3 id="modal-title" style="margin-bottom: 16px; font-family: Georgia, serif; font-weight: normal;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
       
-      <!-- 跨日期複製/搬移功能 -->
       <div id="copy-move-box" style="display:none; background:#f0ece3; padding:12px; border-radius:8px; margin-bottom:14px; border: 1px solid var(--wabi-line);">
         <label style="margin-bottom:6px;">🔄 複製或搬移此行程至其他日期：</label>
         <div style="display:flex; gap:8px; align-items:center;">
