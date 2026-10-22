@@ -50,25 +50,26 @@
 
     .card { background: var(--wabi-card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 20px; }
     
-    /* 可收合卡片標題列 */
+    /* 可收合卡片標題列（確保字體永遠維持橫式） */
     .card-header-toggle {
       display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;
     }
     .card-header-toggle h3 { font-family: Georgia, serif; font-weight: normal; margin-bottom: 0; display: flex; align-items: center; gap: 8px; }
-    .toggle-arrow { font-size: 14px; transition: transform 0.2s; color: var(--wabi-muted); }
+    .toggle-arrow { font-size: 13px; color: var(--wabi-muted); font-weight: normal; white-space: nowrap; }
     .card.collapsed .card-body-content { display: none; }
-    .card.collapsed .toggle-arrow { transform: rotate(-90deg); }
     .card-body-content { margin-top: 16px; }
 
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
+    
+    /* 統一所有輸入框（含 date 日期）的大小與排版 */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
-      width: 100%; padding: 10px 14px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 14px; background: #faf9f6; color: var(--wabi-ink); 
+      width: 100%; height: 42px; padding: 10px 14px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 14px; background: #faf9f6; color: var(--wabi-ink); 
     }
-    textarea { resize: vertical; min-height: 70px; }
+    textarea { height: auto; resize: vertical; min-height: 70px; }
     
     .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .toolbar input { flex: 1; min-width: 220px; }
+    .toolbar input { flex: 1; min-width: 220px; height: 42px; }
     
     button { background: var(--wabi-primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; white-space: nowrap; }
     button:hover { background: var(--wabi-primary-hover); }
@@ -177,7 +178,7 @@
 
     <!-- 區塊一：旅程基本設定 -->
     <div class="card" id="card-basic-settings">
-      <div class="card-header-toggle" onclick="toggleCardSection('card-basic-settings')">
+      <div class="card-header-toggle" onclick="toggleCardSection('card-basic-settings', this)">
         <h3>🌍 旅程基本設定</h3>
         <span class="toggle-arrow">▼ 收合</span>
       </div>
@@ -206,7 +207,7 @@
         
         <div style="margin-top: 12px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--wabi-ink);">
-            <input type="checkbox" id="is-international" style="width: auto;"> 
+            <input type="checkbox" id="is-international" style="width: auto; height: auto;"> 
             這是國外旅遊（需加註往返航班或郵輪資訊）
           </label>
         </div>
@@ -228,7 +229,7 @@
 
     <!-- 區塊二：行李清單 -->
     <div class="card" id="card-luggage">
-      <div class="card-header-toggle" onclick="toggleCardSection('card-luggage')">
+      <div class="card-header-toggle" onclick="toggleCardSection('card-luggage', this)">
         <h3>🧳 行李攜帶清單</h3>
         <span class="toggle-arrow">▼ 收合</span>
       </div>
@@ -243,7 +244,7 @@
 
     <!-- 區塊三：每日行程安排 -->
     <div class="card" id="card-itinerary">
-      <div class="card-header-toggle" onclick="toggleCardSection('card-itinerary')">
+      <div class="card-header-toggle" onclick="toggleCardSection('card-itinerary', this)">
         <h3>📅 每日行程安排</h3>
         <span class="toggle-arrow">▼ 收合</span>
       </div>
@@ -265,7 +266,7 @@
       <h3 id="modal-title" style="margin-bottom: 16px; font-family: Georgia, serif; font-weight: normal;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
       
-      <!-- 新增：跨日期複製/搬移功能 -->
+      <!-- 跨日期複製/搬移功能 -->
       <div id="copy-move-box" style="display:none; background:#f0ece3; padding:12px; border-radius:8px; margin-bottom:14px; border: 1px solid var(--wabi-line);">
         <label style="margin-bottom:6px;">🔄 複製或搬移此行程至其他日期：</label>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -327,6 +328,7 @@
       </div>
     </div>
   </div>
+
   <script>
     const placePresets = {
       '清水寺': { hours: '06:00 - 18:00', address: '京都府京都市東山区清水1丁目294', recommend: '音羽之瀧、產寧坂阿闍梨餅、生八橋' },
@@ -404,10 +406,14 @@
       }
     });
 
-    function toggleCardSection(cardId) {
+    function toggleCardSection(cardId, headerEl) {
       const card = document.getElementById(cardId);
       if (card) {
         card.classList.toggle('collapsed');
+        const arrowSpan = headerEl.querySelector('.toggle-arrow');
+        if (arrowSpan) {
+          arrowSpan.innerText = card.classList.contains('collapsed') ? '▶ 展開' : '▼ 收合';
+        }
       }
     }
 
