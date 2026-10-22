@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Travel Journal ｜ 旅途，慢慢記錄</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <style>
     :root {
       --wabi-bg: #f5f2eb;
@@ -48,6 +49,17 @@
     .user-badge { font-weight: 500; font-size: 13px; color: var(--wabi-primary); background: #f0f2ee; padding: 6px 14px; border-radius: 20px; white-space: nowrap; }
 
     .card { background: var(--wabi-card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--wabi-line); margin-bottom: 20px; }
+    
+    /* 可收合卡片標題列 */
+    .card-header-toggle {
+      display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;
+    }
+    .card-header-toggle h3 { font-family: Georgia, serif; font-weight: normal; margin-bottom: 0; display: flex; align-items: center; gap: 8px; }
+    .toggle-arrow { font-size: 14px; transition: transform 0.2s; color: var(--wabi-muted); }
+    .card.collapsed .card-body-content { display: none; }
+    .card.collapsed .toggle-arrow { transform: rotate(-90deg); }
+    .card-body-content { margin-top: 16px; }
+
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
@@ -64,6 +76,14 @@
     button.secondary:hover { background: #ded8ce; }
     button.accent-btn { background: var(--wabi-accent); }
     button.accent-btn:hover { background: #9e644b; }
+
+    /* 行李清單樣式 */
+    .luggage-category-box { background: #faf9f6; border: 1px solid var(--wabi-line); padding: 16px; border-radius: 12px; margin-bottom: 14px; }
+    .luggage-cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .luggage-items-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .luggage-item-row { display: flex; align-items: center; gap: 10px; background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--wabi-line); }
+    .luggage-item-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--wabi-primary); cursor: pointer; }
+    .luggage-item-row span.checked { text-decoration: line-through; color: var(--wabi-muted); }
 
     .day-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
     .day-tab { padding: 8px 16px; border-radius: 20px; background: #eae6df; color: var(--wabi-muted); border: none; cursor: pointer; white-space: nowrap; font-weight: 500; font-size: 13px; }
@@ -103,6 +123,7 @@
       body { background: white; padding: 0; }
       .no-print { display: none !important; }
       .card { border: none; box-shadow: none; padding: 0; }
+      .card-body-content { display: block !important; }
     }
   </style>
 </head>
@@ -154,61 +175,87 @@
       </div>
     </header>
 
-    <div class="card">
-      <h3 style="margin-bottom: 14px; font-family: Georgia, serif; font-weight: normal;">🌍 旅程基本設定</h3>
-      <div class="grid-2">
-        <div>
-          <label>旅遊地點 / 國家</label>
-          <input type="text" id="trip-destination" placeholder="例如：日本京都 或 地中海郵輪">
-        </div>
-        <div>
-          <label>出發日期</label>
-          <input type="date" id="trip-start-date">
-        </div>
+    <!-- 區塊一：旅程基本設定 -->
+    <div class="card" id="card-basic-settings">
+      <div class="card-header-toggle" onclick="toggleCardSection('card-basic-settings')">
+        <h3>🌍 旅程基本設定</h3>
+        <span class="toggle-arrow">▼ 收合</span>
       </div>
-
-      <div class="grid-2" style="margin-top: 12px;">
-        <div>
-          <label>旅遊天數設定 (天)</label>
-          <input type="number" id="trip-days" min="1" value="3">
-        </div>
-        <div>
-          <label>頁面大標題 (英文/自訂)</label>
-          <input type="text" id="custom-brand-title" placeholder="例如：TRAVEL JOURNAL">
-        </div>
-      </div>
-      
-      <div style="margin-top: 12px;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--wabi-ink);">
-          <input type="checkbox" id="is-international" style="width: auto;"> 
-          這是國外旅遊（需加註往返航班或郵輪資訊）
-        </label>
-      </div>
-
-      <div id="transport-section" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--wabi-line);">
-        <div class="grid-2">
+      <div class="card-body-content">
+        <div class="grid-2" style="margin-top: 10px;">
           <div>
-            <label>去程交通（航班 / 航次與時間）</label>
-            <input type="text" id="transport-outbound" placeholder="例如: CI-102 台北 08:00 -> 大阪 11:30">
+            <label>旅遊地點 / 國家</label>
+            <input type="text" id="trip-destination" placeholder="例如：日本京都 或 高雄">
           </div>
           <div>
-            <label>回程交通（航班 / 航次與時間）</label>
-            <input type="text" id="transport-inbound" placeholder="例如: CI-103 大阪 14:00 -> 台北 16:00">
+            <label>出發日期</label>
+            <input type="date" id="trip-start-date">
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top: 12px;">
+          <div>
+            <label>旅遊天數設定 (天)</label>
+            <input type="number" id="trip-days" min="1" value="3">
+          </div>
+          <div>
+            <label>頁面大標題 (英文/自訂)</label>
+            <input type="text" id="custom-brand-title" placeholder="例如：TRAVEL JOURNAL">
+          </div>
+        </div>
+        
+        <div style="margin-top: 12px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--wabi-ink);">
+            <input type="checkbox" id="is-international" style="width: auto;"> 
+            這是國外旅遊（需加註往返航班或郵輪資訊）
+          </label>
+        </div>
+
+        <div id="transport-section" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--wabi-line);">
+          <div class="grid-2">
+            <div>
+              <label>去程交通（航班 / 航次與時間）</label>
+              <input type="text" id="transport-outbound" placeholder="例如: CI-102 台北 08:00 -> 大阪 11:30">
+            </div>
+            <div>
+              <label>回程交通（航班 / 航次與時間）</label>
+              <input type="text" id="transport-inbound" placeholder="例如: CI-103 大阪 14:00 -> 台北 16:00">
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <h3 style="margin-bottom: 14px; font-family: Georgia, serif; font-weight: normal;">📅 每日行程安排</h3>
-      
-      <div class="toolbar no-print">
-        <input type="text" id="search-input" placeholder="🔍 搜尋行程、地點或備註...">
-        <button id="add-item-btn" type="button">＋ 新增行程</button>
+    <!-- 區塊二：行李清單 -->
+    <div class="card" id="card-luggage">
+      <div class="card-header-toggle" onclick="toggleCardSection('card-luggage')">
+        <h3>🧳 行李攜帶清單</h3>
+        <span class="toggle-arrow">▼ 收合</span>
       </div>
+      <div class="card-body-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
+          <p style="font-size: 13px; color: var(--wabi-muted);">分類管理您的行李，勾選已準備好的項目：</p>
+          <button class="secondary" type="button" onclick="addLuggageCategory()" style="padding: 6px 14px; font-size: 13px;">＋ 新增行李大類別</button>
+        </div>
+        <div id="luggage-container"></div>
+      </div>
+    </div>
 
-      <div class="day-tabs" id="day-tabs-container"></div>
-      <div id="itinerary-list"></div>
+    <!-- 區塊三：每日行程安排 -->
+    <div class="card" id="card-itinerary">
+      <div class="card-header-toggle" onclick="toggleCardSection('card-itinerary')">
+        <h3>📅 每日行程安排</h3>
+        <span class="toggle-arrow">▼ 收合</span>
+      </div>
+      <div class="card-body-content">
+        <div class="toolbar no-print" style="margin-top: 10px;">
+          <input type="text" id="search-input" placeholder="🔍 搜尋行程、地點或備註...">
+          <button id="add-item-btn" type="button">＋ 新增行程</button>
+        </div>
+
+        <div class="day-tabs" id="day-tabs-container"></div>
+        <div id="itinerary-list"></div>
+      </div>
     </div>
   </div>
 
@@ -218,6 +265,16 @@
       <h3 id="modal-title" style="margin-bottom: 16px; font-family: Georgia, serif; font-weight: normal;">新增行程</h3>
       <input type="hidden" id="edit-index" value="-1">
       
+      <!-- 新增：跨日期複製/搬移功能 -->
+      <div id="copy-move-box" style="display:none; background:#f0ece3; padding:12px; border-radius:8px; margin-bottom:14px; border: 1px solid var(--wabi-line);">
+        <label style="margin-bottom:6px;">🔄 複製或搬移此行程至其他日期：</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="target-day-select" style="flex:1; padding:6px 10px; font-size:13px;"></select>
+          <button type="button" class="secondary" onclick="copyItineraryToDay()" style="padding:6px 12px; font-size:12px;">複製</button>
+          <button type="button" class="accent-btn" onclick="moveItineraryToDay()" style="padding:6px 12px; font-size:12px;">搬移</button>
+        </div>
+      </div>
+
       <div class="grid-2" style="margin-bottom: 0;">
         <div style="margin-bottom: 12px;">
           <label>時間 / 時段</label>
@@ -235,12 +292,12 @@
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>營業時間（自動帶入/亦可自行修改）</label>
+        <label>營業時間（空白時版面自動隱藏）</label>
         <input type="text" id="item-hours" placeholder="例如：09:00 - 18:00 (週一公休)">
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>詳細地址（選填，可用於一鍵導航）</label>
+        <label>詳細地址（空白時版面自動隱藏）</label>
         <input type="text" id="item-address" placeholder="例如：高雄市三民區海中街16號">
       </div>
 
@@ -270,16 +327,15 @@
       </div>
     </div>
   </div>
-
   <script>
     const placePresets = {
-      '清水寺': { hours: '06:00 - 18:00', recommend: '音羽之瀧、產寧坂阿闍梨餅、生八橋' },
-      '伏見稻荷大社': { hours: '24 小時開放', recommend: '千本鳥居、狐狸繪馬、御守' },
-      '淺草寺': { hours: '06:00 - 17:00', recommend: '人形燒、雷門燈籠、花月堂菠蘿麵包' },
-      '築地市場': { hours: '05:00 - 14:00 (週日/週三公休)', recommend: '玉子燒、海鮮丼、炙燒壽司' },
-      '老爹蔬食': { hours: '11:30 - 20:00 (週一公休)', recommend: '預定麵線糊、肉燥飯' },
-      '駁二藝術特區': { hours: '10:00 - 18:00', recommend: '微熱山丘鳳梨酥、手作市集' },
-      '六合夜市': { hours: '17:00 - 00:00', recommend: '木瓜牛奶、海鮮粥、海產燒烤' }
+      '清水寺': { hours: '06:00 - 18:00', address: '京都府京都市東山区清水1丁目294', recommend: '音羽之瀧、產寧坂阿闍梨餅、生八橋' },
+      '伏見稻荷大社': { hours: '24 小時開放', address: '京都府京都市伏見区深草藪之内町68', recommend: '千本鳥居、狐狸繪馬、御守' },
+      '淺草寺': { hours: '06:00 - 17:00', address: '東京都台東区浅草2丁目3-1', recommend: '人形燒、雷門燈籠、花月堂菠蘿麵包' },
+      '築地市場': { hours: '05:00 - 14:00 (週日/週三公休)', address: '東京都中央区築地4丁目13-9', recommend: '玉子燒、海鮮丼、炙燒壽司' },
+      '老爹蔬食': { hours: '06:30 - 15:00', address: '高雄市左營區海中街16號', recommend: '麵線糊、肉燥飯' },
+      '駁二藝術特區': { hours: '10:00 - 18:00', address: '高雄市鹽埕區大勇路1號', recommend: '微熱山丘鳳梨酥、手作市集' },
+      '六合夜市': { hours: '17:00 - 00:00', address: '高雄市新興區六合二路', recommend: '木瓜牛奶、海鮮粥、海產燒烤' }
     };
 
     let currentUser = localStorage.getItem('current_user') || '';
@@ -288,7 +344,7 @@
     let tripsList = [];
     let currentTripData = {
       id: '', title: '高雄三日遊', destination: '高雄', startDate: '', days: 3, brandTitle: 'TRAVEL JOURNAL',
-      isInternational: false, transportOutbound: '', transportInbound: '', itineraries: {}
+      isInternational: false, transportOutbound: '', transportInbound: '', luggage: {}, itineraries: {}
     };
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -305,10 +361,12 @@
         itemTitleInput.oninput = (e) => {
           const val = e.target.value.trim();
           const hoursInput = document.getElementById('item-hours');
+          const addressInput = document.getElementById('item-address');
           const recInput = document.getElementById('item-recommend');
           for (let key in placePresets) {
             if (val.includes(key)) {
               if (hoursInput && !hoursInput.value) hoursInput.value = placePresets[key].hours;
+              if (addressInput && !addressInput.value) addressInput.value = placePresets[key].address;
               if (recInput && !recInput.value) recInput.value = placePresets[key].recommend;
               break;
             }
@@ -346,6 +404,13 @@
       }
     });
 
+    function toggleCardSection(cardId) {
+      const card = document.getElementById(cardId);
+      if (card) {
+        card.classList.toggle('collapsed');
+      }
+    }
+
     function handleLogin() {
       const input = document.getElementById('username-input').value.trim();
       if (!input) return alert('請輸入您的帳號名稱');
@@ -378,7 +443,9 @@
       if (tripsList.length === 0) {
         const defaultTrip = {
           id: 'trip_' + Date.now(), title: '高雄三日遊', destination: '高雄', startDate: '', days: 3,
-          brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportOutbound: '', transportInbound: '', itineraries: {}
+          brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportOutbound: '', transportInbound: '',
+          luggage: { '隨身文件': ['護照 / 簽證', '機票 / 住宿憑證', '健保卡 / 信用卡'], '衣物盥洗': ['換洗衣物', '盥洗用品 / 保養品', '雨具 / 帽子'] },
+          itineraries: {}
         };
         tripsList.push(defaultTrip);
         saveUserTrips();
@@ -429,7 +496,9 @@
       if (!title) return;
       const newTrip = {
         id: 'trip_' + Date.now(), title: title, destination: title, startDate: '', days: 3,
-        brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportOutbound: '', transportInbound: '', itineraries: {}
+        brandTitle: 'TRAVEL JOURNAL', isInternational: false, transportOutbound: '', transportInbound: '',
+        luggage: { '隨身文件': ['護照 / 證件'], '衣物用品': ['換洗衣物'] },
+        itineraries: {}
       };
       tripsList.push(newTrip);
       saveUserTrips();
@@ -451,6 +520,10 @@
       localStorage.setItem('current_trip_id', currentTripId);
       currentTripData = JSON.parse(JSON.stringify(trip));
 
+      if (!currentTripData.luggage) {
+        currentTripData.luggage = { '隨身文件': ['護照 / 證件'], '衣物用品': ['換洗衣物'] };
+      }
+
       document.getElementById('folder-screen').style.display = 'none';
       document.getElementById('detail-screen').style.display = 'block';
       document.getElementById('detail-user-display').innerText = currentUser;
@@ -465,6 +538,7 @@
 
       toggleInternationalFields();
       updateTripDaysConfig();
+      renderLuggageList();
       renderItineraries();
     }
 
@@ -484,6 +558,129 @@
         tripsList[index] = JSON.parse(JSON.stringify(currentTripData));
         saveUserTrips();
       }
+    }
+
+    function renderLuggageList() {
+      const container = document.getElementById('luggage-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (!currentTripData.luggage) currentTripData.luggage = {};
+
+      const categories = Object.keys(currentTripData.luggage);
+      if (categories.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color: var(--wabi-muted); padding: 16px; font-size: 13px;">尚無行李大類別，點擊上方按鈕新增！</p>`;
+        return;
+      }
+
+      categories.forEach((catName) => {
+        const catBox = document.createElement('div');
+        catBox.className = 'luggage-category-box';
+
+        let itemsHtml = '';
+        const items = currentTripData.luggage[catName] || [];
+        
+        items.forEach((itemObj, idx) => {
+          const itemName = typeof itemObj === 'string' ? itemObj : itemObj.text;
+          const isChecked = typeof itemObj === 'object' && itemObj.checked ? 'checked' : '';
+          const lineClass = isChecked ? 'checked' : '';
+
+          itemsHtml += `
+            <div class="luggage-item-row">
+              <input type="checkbox" ${isChecked} onchange="toggleLuggageItem('${catName}', ${idx}, this.checked)">
+              <span class="${lineClass}" style="flex: 1; font-size: 14px;">${itemName}</span>
+              <button class="secondary" type="button" onclick="editLuggageItem('${catName}', ${idx})" style="padding: 2px 8px; font-size: 11px;">✏️</button>
+              <button class="secondary delete-btn" type="button" onclick="deleteLuggageItem('${catName}', ${idx})" style="padding: 2px 8px; font-size: 11px; background: #e8dfd8;">🗑️</button>
+            </div>
+          `;
+        });
+
+        catBox.innerHTML = `
+          <div class="luggage-cat-header">
+            <h4 style="font-family: Georgia, serif; font-size: 15px; color: var(--wabi-primary);">📌 ${catName}</h4>
+            <div style="display: flex; gap: 6px;">
+              <button class="secondary" type="button" onclick="addLuggageItem('${catName}')" style="padding: 4px 10px; font-size: 12px;">＋ 新增項目</button>
+              <button class="secondary" type="button" onclick="renameLuggageCategory('${catName}')" style="padding: 4px 8px; font-size: 12px;">✏️</button>
+              <button class="secondary" type="button" onclick="deleteLuggageCategory('${catName}')" style="padding: 4px 8px; font-size: 12px; background: #e8dfd8;">🗑️</button>
+            </div>
+          </div>
+          <div class="luggage-items-list">
+            ${itemsHtml || '<p style="font-size: 12px; color: var(--wabi-muted); padding: 4px;">尚無項目</p>'}
+          </div>
+        `;
+        container.appendChild(catBox);
+      });
+    }
+
+    function addLuggageCategory() {
+      const catName = prompt('請輸入新的行李大類別名稱（例如：電子3C、藥妝用品）：');
+      if (!catName || !catName.trim()) return;
+      const name = catName.trim();
+      if (currentTripData.luggage[name]) return alert('此類別已存在！');
+      
+      currentTripData.luggage[name] = [];
+      saveCurrentTripData();
+      renderLuggageList();
+    }
+
+    function renameLuggageCategory(oldName) {
+      const newName = prompt('請輸入新的大類別名稱：', oldName);
+      if (!newName || !newName.trim() || newName.trim() === oldName) return;
+      const name = newName.trim();
+      if (currentTripData.luggage[name]) return alert('此類別名稱已存在！');
+
+      currentTripData.luggage[name] = currentTripData.luggage[oldName];
+      delete currentTripData.luggage[oldName];
+      saveCurrentTripData();
+      renderLuggageList();
+    }
+
+    function deleteLuggageCategory(catName) {
+      if (!confirm(`確定要刪除「${catName}」整個大類別嗎？`)) return;
+      delete currentTripData.luggage[catName];
+      saveCurrentTripData();
+      renderLuggageList();
+    }
+
+    function addLuggageItem(catName) {
+      const itemName = prompt(`請輸入要新增至「${catName}」的小項目名稱：`);
+      if (!itemName || !itemName.trim()) return;
+      
+      if (!currentTripData.luggage[catName]) currentTripData.luggage[catName] = [];
+      currentTripData.luggage[catName].push({ text: itemName.trim(), checked: false });
+      saveCurrentTripData();
+      renderLuggageList();
+    }
+
+    function editLuggageItem(catName, idx) {
+      const currentObj = currentTripData.luggage[catName][idx];
+      const currentText = typeof currentObj === 'string' ? currentObj : currentObj.text;
+      const newText = prompt('修改行李項目名稱：', currentText);
+      if (!newText || !newText.trim()) return;
+
+      if (typeof currentObj === 'string') {
+        currentTripData.luggage[catName][idx] = { text: newText.trim(), checked: false };
+      } else {
+        currentTripData.luggage[catName][idx].text = newText.trim();
+      }
+      saveCurrentTripData();
+      renderLuggageList();
+    }
+
+    function toggleLuggageItem(catName, idx, isChecked) {
+      const currentObj = currentTripData.luggage[catName][idx];
+      if (typeof currentObj === 'string') {
+        currentTripData.luggage[catName][idx] = { text: currentObj, checked: isChecked };
+      } else {
+        currentTripData.luggage[catName][idx].checked = isChecked;
+      }
+      saveCurrentTripData();
+    }
+
+    function deleteLuggageItem(catName, idx) {
+      currentTripData.luggage[catName].splice(idx, 1);
+      saveCurrentTripData();
+      renderLuggageList();
     }
 
     function exportTripCode() {
@@ -637,12 +834,13 @@
         div.className = 'itinerary-item';
         
         const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
-        const displayAddress = item.address ? item.address : item.title;
-        const displayHours = item.hours ? `營業時間：${item.hours}` : `營業時間：09:00 - 18:00`;
+        const displayAddress = item.address ? item.address : '';
+        const displayHours = item.hours ? item.hours : '';
         const mapSearchQuery = item.address ? item.address : item.title;
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchQuery)}`;
 
-        const hasContent = item.desc || isPlace || item.recommend || item.memo || item.hours;
+        const hasLocationMeta = isPlace && (displayHours !== '' || displayAddress !== '');
+        const hasContent = item.desc || hasLocationMeta || item.recommend || item.memo;
 
         div.innerHTML = `
           <div class="itinerary-header">
@@ -662,10 +860,10 @@
             <div class="itinerary-content-box">
               ${item.desc ? `<div style="font-weight: 500;">${item.desc}</div>` : ''}
               
-              ${isPlace ? `
+              ${hasLocationMeta ? `
                 <div class="location-info-meta">
-                  <span>⏱ ${displayHours}</span>
-                  <span>📍 地址：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress} (點擊一鍵導航)</a></span>
+                  ${displayHours ? `<span>⏱ 營業時間：${displayHours}</span>` : ''}
+                  ${displayAddress ? `<span>📍 地址：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress} (點擊一鍵導航)</a></span>` : ''}
                 </div>
               ` : ''}
 
@@ -713,9 +911,34 @@
       renderItineraries();
     }
 
+    function populateTargetDaySelect() {
+      const select = document.getElementById('target-day-select');
+      if (!select) return;
+      select.innerHTML = '';
+
+      const totalDays = parseInt(document.getElementById('trip-days').value) || 1;
+      const startDateStr = document.getElementById('trip-start-date').value;
+      let baseDate = startDateStr ? new Date(startDateStr) : null;
+
+      for (let i = 1; i <= totalDays; i++) {
+        let dateText = '';
+        if (baseDate && !isNaN(baseDate.getTime())) {
+          let currDate = new Date(baseDate);
+          currDate.setDate(baseDate.getDate() + (i - 1));
+          dateText = ` (${currDate.getMonth() + 1}/${currDate.getDate()})`;
+        }
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = `第 ${i} 日${dateText}`;
+        if (i === currentDay) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
     function openAddModal() {
       document.getElementById('modal-title').innerText = '新增行程';
       document.getElementById('edit-index').value = '-1';
+      document.getElementById('copy-move-box').style.display = 'none';
       document.getElementById('item-time').value = '';
       document.getElementById('item-link').value = '';
       document.getElementById('item-title').value = '';
@@ -733,6 +956,10 @@
       const item = currentTripData.itineraries[dayKey][index];
       document.getElementById('modal-title').innerText = '編輯行程';
       document.getElementById('edit-index').value = index;
+      
+      populateTargetDaySelect();
+      document.getElementById('copy-move-box').style.display = 'block';
+
       document.getElementById('item-time').value = item.time || '';
       document.getElementById('item-link').value = item.link || '';
       document.getElementById('item-title').value = item.title || '';
@@ -743,6 +970,49 @@
       document.getElementById('item-memo').value = item.memo || '';
       document.getElementById('item-image').value = item.image || '';
       document.getElementById('modal-backdrop').style.display = 'flex';
+    }
+
+    function copyItineraryToDay() {
+      const targetDay = parseInt(document.getElementById('target-day-select').value);
+      const index = parseInt(document.getElementById('edit-index').value);
+      if (index === -1) return;
+
+      const currentDayKey = `day_${currentDay}`;
+      const targetDayKey = `day_${targetDay}`;
+      const item = JSON.parse(JSON.stringify(currentTripData.itineraries[currentDayKey][index]));
+
+      if (!currentTripData.itineraries[targetDayKey]) {
+        currentTripData.itineraries[targetDayKey] = [];
+      }
+      currentTripData.itineraries[targetDayKey].push(item);
+
+      saveCurrentTripData();
+      closeModal();
+      alert(`🎉 已成功複製此行程至【第 ${targetDay} 日】！`);
+    }
+
+    function moveItineraryToDay() {
+      const targetDay = parseInt(document.getElementById('target-day-select').value);
+      const index = parseInt(document.getElementById('edit-index').value);
+      if (index === -1) return;
+
+      if (targetDay === currentDay) {
+        return alert('該行程已在當前日期，無須搬移！');
+      }
+
+      const currentDayKey = `day_${currentDay}`;
+      const targetDayKey = `day_${targetDay}`;
+      const item = currentTripData.itineraries[currentDayKey].splice(index, 1)[0];
+
+      if (!currentTripData.itineraries[targetDayKey]) {
+        currentTripData.itineraries[targetDayKey] = [];
+      }
+      currentTripData.itineraries[targetDayKey].push(item);
+
+      saveCurrentTripData();
+      closeModal();
+      renderItineraries();
+      alert(`🚚 已成功將行程搬移至【第 ${targetDay} 日】！`);
     }
 
     function closeModal() {
