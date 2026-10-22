@@ -295,7 +295,7 @@
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>地點名稱（儲存後自動生成一鍵導航連結）</label>
+        <label>地點名稱（若非地點如出門/起床將自動隱藏導航）</label>
         <input type="text" id="item-title" placeholder="例如：清水寺、老爹蔬食、羅東夜市">
       </div>
 
@@ -813,19 +813,29 @@
         return;
       }
 
+      // 非地點詞彙自動判斷清單
+      const nonLocationKeywords = ['出發', '起床', '出門', '集合', '解散', '賦歸', '休息', '自由活動', '搭車', '回飯店'];
+
       filtered.forEach((item) => {
         const realIndex = items.indexOf(item);
         const div = document.createElement('div');
         div.className = 'itinerary-item';
         
-        // 優先使用詳細地址作為導航，若無詳細地址則使用地點名稱
-        const mapSearchQuery = item.address ? item.address : item.title;
+        const titleText = (item.title || '').trim();
+        const hasAddress = !!(item.address && item.address.trim());
+        
+        // 判斷是否為非地點詞彙
+        const isNonLocation = nonLocationKeywords.some(kw => titleText.includes(kw));
+
+        // 只有當「有填寫詳細地址」或「標題不是非地點詞彙且不為空」時，才啟動地點導航
+        const shouldShowNav = hasAddress || (!isNonLocation && titleText !== '');
+
+        const mapSearchQuery = hasAddress ? item.address : titleText;
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchQuery)}`;
 
         const displayHours = item.hours ? item.hours : '';
         const displayAddress = item.address ? item.address : '';
-        const hasLocationMeta = displayHours !== '' || displayAddress !== '' || item.title !== '';
-        const hasContent = item.desc || hasLocationMeta || item.recommend || item.memo;
+        const hasContent = item.desc || displayHours !== '' || shouldShowNav || item.recommend || item.memo;
 
         div.innerHTML = `
           <div class="itinerary-header">
@@ -847,7 +857,7 @@
               
               <div class="location-info-meta">
                 ${displayHours ? `<span>⏱ 營業時間：${displayHours}</span>` : ''}
-                ${item.title ? `<span>📍 地點導航：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress || item.title} (點擊一鍵導航)</a></span>` : ''}
+                ${shouldShowNav ? `<span>📍 地點導航：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress || titleText} (點擊一鍵導航)</a></span>` : ''}
               </div>
 
               ${item.recommend ? `<div class="recommend-badge">✨ 推薦必吃/必買：${item.recommend}</div>` : ''}
