@@ -58,14 +58,30 @@
     .card.collapsed .card-body-content { display: none; }
     .card-body-content { margin-top: 16px; }
 
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; align-items: flex-end; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px; align-items: flex-end; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
     
-    /* 統一所有輸入框與日期選擇器的大小與邊框 */
+    /* 強制修正 iOS Safari 日期選擇器寬度與外觀 */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
-      width: 100%; height: 42px; padding: 10px 14px; border: 1px solid var(--wabi-line); border-radius: 8px; font-size: 14px; background: #faf9f6; color: var(--wabi-ink); 
+      width: 100% !important; 
+      max-width: 100% !important;
+      height: 42px; 
+      padding: 8px 12px; 
+      border: 1px solid var(--wabi-line); 
+      border-radius: 8px; 
+      font-size: 14px; 
+      background: #faf9f6; 
+      color: var(--wabi-ink); 
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
     }
-    input[type="date"] { box-sizing: border-box; line-height: normal; }
+    input[type="date"] { 
+      display: block;
+      box-sizing: border-box; 
+      min-height: 42px;
+      line-height: 24px;
+    }
     textarea { height: auto; resize: vertical; min-height: 70px; }
     
     .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
