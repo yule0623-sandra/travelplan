@@ -61,7 +61,7 @@
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px; align-items: flex-end; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
     
-    /* 強制修正 iOS Safari 日期選擇器寬度與外觀 */
+    /* 修正 iOS Safari 日期選擇器寬度與外觀 */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
       width: 100% !important; 
       max-width: 100% !important;
@@ -295,8 +295,8 @@
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>地點名稱（輸入熱門景點/餐廳自動建議）</label>
-        <input type="text" id="item-title" placeholder="例如：清水寺、老爹蔬食、築地市場">
+        <label>地點名稱（儲存後自動生成一鍵導航連結）</label>
+        <input type="text" id="item-title" placeholder="例如：清水寺、老爹蔬食、羅東夜市">
       </div>
 
       <div style="margin-bottom: 12px;">
@@ -305,8 +305,8 @@
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>詳細地址（空白時版面自動隱藏）</label>
-        <input type="text" id="item-address" placeholder="例如：高雄市三民區海中街16號">
+        <label>詳細地址（選填，空白時自動隱藏）</label>
+        <input type="text" id="item-address" placeholder="例如：宜蘭縣羅東鎮夜市路">
       </div>
 
       <div style="margin-bottom: 12px;">
@@ -315,7 +315,7 @@
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>熱門必吃 / 必買推薦（自動抓取/亦可自行修改）</label>
+        <label>熱門必吃 / 必買推薦（選填）</label>
         <input type="text" id="item-recommend" placeholder="例如：招牌抹茶泡芙、限定紀念品">
       </div>
 
@@ -337,16 +337,6 @@
   </div>
 
   <script>
-    const placePresets = {
-      '清水寺': { hours: '06:00 - 18:00', address: '京都府京都市東山区清水1丁目294', recommend: '音羽之瀧、產寧坂阿闍梨餅、生八橋' },
-      '伏見稻荷大社': { hours: '24 小時開放', address: '京都府京都市伏見区深草藪之内町68', recommend: '千本鳥居、狐狸繪馬、御守' },
-      '淺草寺': { hours: '06:00 - 17:00', address: '東京都台東区浅草2丁目3-1', recommend: '人形燒、雷門燈籠、花月堂菠蘿麵包' },
-      '築地市場': { hours: '05:00 - 14:00 (週日/週三公休)', address: '東京都中央区築地4丁目13-9', recommend: '玉子燒、海鮮丼、炙燒壽司' },
-      '老爹蔬食': { hours: '06:30 - 15:00', address: '高雄市左營區海中街16號', recommend: '麵線糊、肉燥飯' },
-      '駁二藝術特區': { hours: '10:00 - 18:00', address: '高雄市鹽埕區大勇路1號', recommend: '微熱山丘鳳梨酥、手作市集' },
-      '六合夜市': { hours: '17:00 - 00:00', address: '高雄市新興區六合二路', recommend: '木瓜牛奶、海鮮粥、海產燒烤' }
-    };
-
     let currentUser = localStorage.getItem('current_user') || '';
     let currentTripId = localStorage.getItem('current_trip_id') || '';
     let currentDay = 1;
@@ -364,24 +354,6 @@
       document.getElementById('back-to-folders-btn').onclick = showFolderScreen;
       document.getElementById('export-pdf-btn').onclick = () => window.print();
       document.getElementById('export-code-btn').onclick = exportTripCode;
-
-      const itemTitleInput = document.getElementById('item-title');
-      if (itemTitleInput) {
-        itemTitleInput.oninput = (e) => {
-          const val = e.target.value.trim();
-          const hoursInput = document.getElementById('item-hours');
-          const addressInput = document.getElementById('item-address');
-          const recInput = document.getElementById('item-recommend');
-          for (let key in placePresets) {
-            if (val.includes(key)) {
-              if (hoursInput && !hoursInput.value) hoursInput.value = placePresets[key].hours;
-              if (addressInput && !addressInput.value) addressInput.value = placePresets[key].address;
-              if (recInput && !recInput.value) recInput.value = placePresets[key].recommend;
-              break;
-            }
-          }
-        };
-      }
 
       document.getElementById('trip-destination').oninput = saveCurrentTripData;
       document.getElementById('trip-start-date').oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
@@ -846,13 +818,13 @@
         const div = document.createElement('div');
         div.className = 'itinerary-item';
         
-        const isPlace = item.title && !['出發', '出發！', '集合', '解散', '賦歸'].includes(item.title.trim());
-        const displayAddress = item.address ? item.address : '';
-        const displayHours = item.hours ? item.hours : '';
+        // 優先使用詳細地址作為導航，若無詳細地址則使用地點名稱
         const mapSearchQuery = item.address ? item.address : item.title;
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchQuery)}`;
 
-        const hasLocationMeta = isPlace && (displayHours !== '' || displayAddress !== '');
+        const displayHours = item.hours ? item.hours : '';
+        const displayAddress = item.address ? item.address : '';
+        const hasLocationMeta = displayHours !== '' || displayAddress !== '' || item.title !== '';
         const hasContent = item.desc || hasLocationMeta || item.recommend || item.memo;
 
         div.innerHTML = `
@@ -873,12 +845,10 @@
             <div class="itinerary-content-box">
               ${item.desc ? `<div style="font-weight: 500;">${item.desc}</div>` : ''}
               
-              ${hasLocationMeta ? `
-                <div class="location-info-meta">
-                  ${displayHours ? `<span>⏱ 營業時間：${displayHours}</span>` : ''}
-                  ${displayAddress ? `<span>📍 地址：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress} (點擊一鍵導航)</a></span>` : ''}
-                </div>
-              ` : ''}
+              <div class="location-info-meta">
+                ${displayHours ? `<span>⏱ 營業時間：${displayHours}</span>` : ''}
+                ${item.title ? `<span>📍 地點導航：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress || item.title} (點擊一鍵導航)</a></span>` : ''}
+              </div>
 
               ${item.recommend ? `<div class="recommend-badge">✨ 推薦必吃/必買：${item.recommend}</div>` : ''}
 
