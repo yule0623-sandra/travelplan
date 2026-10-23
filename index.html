@@ -243,7 +243,7 @@
       </div>
       <div class="card-body-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
-          <p style="font-size: 13px; color: var(--wabi-muted);">分類管理您的行李，支援大類別一鍵上下移動排序：</p>
+          <p style="font-size: 13px; color: var(--wabi-muted);">分類管理您的行李，僅保留大項目一鍵上下移動排序：</p>
           <button class="secondary" type="button" onclick="addLuggageCategory()" style="padding: 6px 14px; font-size: 13px;">＋ 新增行李大類別</button>
         </div>
         <div id="luggage-container"></div>
@@ -694,26 +694,22 @@
       renderLuggageList();
     }
 
-    // 恢復最原始穩定的編碼分享機制
+    // 採用您喜愛的簡潔寫法，同時完美結合完整行程資料
     function exportTripCode() {
       try {
         const jsonStr = JSON.stringify(currentTripData);
         const encodedCode = encodeURIComponent(jsonStr);
-
         const baseUrl = window.location.origin + window.location.pathname;
-        const shareUrl = `${baseUrl}#share=${encodedCode}`;
+        const shortUrl = `${baseUrl}#share=${encodedCode}`;
 
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(shareUrl).then(() => {
-            alert('✨ 行程分享網址已成功複製到剪貼簿！\n傳送給好友後，對方點開網址即可直接同步匯入。');
-          }).catch(() => {
-            prompt('請複製以下分享網址傳給好友：', shareUrl);
-          });
-        } else {
-          prompt('請複製以下分享網址傳給好友：', shareUrl);
-        }
+        navigator.clipboard.writeText(shortUrl).then(() => {
+          alert("網址已成功複製!");
+        }).catch(err => {
+          console.error("複製失敗: ", err);
+          prompt("請手動複製以下分享網址：", shortUrl);
+        });
       } catch (err) {
-        alert('匯出短網址失敗！');
+        alert('匯出失敗！');
       }
     }
 
