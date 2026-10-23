@@ -447,6 +447,7 @@
       renderFolderList();
     }
 
+    // 庫存清單中的每個行程卡片現在都擁有專屬的「分享」按鈕
     function renderFolderList() {
       const container = document.getElementById('trip-folder-container');
       if (!container) return;
@@ -458,14 +459,22 @@
         card.innerHTML = `
           <h4>📁 ${trip.title}</h4>
           <p>目的地：${trip.destination || '未設定'} ｜ ${trip.days} 天行程</p>
-          <div style="position: absolute; top: 12px; right: 12px;">
-            <button class="secondary delete-trip-btn" type="button" data-id="${trip.id}" style="padding: 2px 8px; font-size: 11px; background: #e8dfd8;">🗑️</button>
+          <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 4px;">
+            <button class="secondary share-single-trip-btn" type="button" data-id="${trip.id}" style="padding: 2px 8px; font-size: 11px; background: #e0ded5;" title="分享此行程">📤</button>
+            <button class="secondary delete-trip-btn" type="button" data-id="${trip.id}" style="padding: 2px 8px; font-size: 11px; background: #e8dfd8;" title="刪除此行程">🗑️</button>
           </div>
         `;
         card.onclick = (e) => {
           if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
           loadTripDetail(trip.id);
         };
+        
+        // 獨立分享該筆行程
+        card.querySelector('.share-single-trip-btn').onclick = (e) => {
+          e.stopPropagation();
+          shareSpecificTrip(trip.id);
+        };
+
         card.querySelector('.delete-trip-btn').onclick = (e) => {
           e.stopPropagation();
           deleteTrip(trip.id);
@@ -694,7 +703,9 @@
       renderLuggageList();
     }
 
+    // 當前正開啟的行程進行一鍵分享
     function exportTripCode() {
+      saveCurrentTripData(); // 確保最新變更已存入
       try {
         const jsonStr = JSON.stringify(currentTripData);
         const encodedCode = encodeURIComponent(jsonStr);
@@ -703,6 +714,28 @@
 
         navigator.clipboard.writeText(shortUrl).then(() => {
           alert("網址已成功複製!");
+        }).catch(err => {
+          console.error("複製失敗: ", err);
+          prompt("請手動複製以下分享網址：", shortUrl);
+        });
+      } catch (err) {
+        alert('匯出失敗！');
+      }
+    }
+
+    // 從庫存清單直接分享指定 ID 的行程
+    function shareSpecificTrip(tripId) {
+      const targetTrip = tripsList.find(t => t.id === tripId);
+      if (!targetTrip) return alert('找不到此行程資料！');
+
+      try {
+        const jsonStr = JSON.stringify(targetTrip);
+        const encodedCode = encodeURIComponent(jsonStr);
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shortUrl = `${baseUrl}#share=${encodedCode}`;
+
+        navigator.clipboard.writeText(shortUrl).then(() => {
+          alert(`「${targetTrip.title}」網址已成功複製!`);
         }).catch(err => {
           console.error("複製失敗: ", err);
           prompt("請手動複製以下分享網址：", shortUrl);
@@ -1056,7 +1089,6 @@
       }
 
       saveCurrentTripData();
-      closeManager(); // Fix scope if needed or close properly
       closeModal();
       renderItineraries();
     }
