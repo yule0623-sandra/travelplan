@@ -376,6 +376,7 @@
       }
 
       checkUrlAutoImport();
+      window.addEventListener('hashchange', checkUrlAutoImport);
 
       if (currentUser && currentUser.trim() !== '') {
         initUserSession();
@@ -742,64 +743,116 @@
       }
     }
 
-    function checkUrlAutoImport() {
-      const hash = window.location.hash;
-      if (hash && (hash.includes('#share=') || hash.includes('#s='))) {
-        try {
-          let rawData = hash.includes('#share=') ? hash.split('#share=')[1] : hash.split('#s=')[1];
-          let jsonStr = decodeURIComponent(rawData);
-          const importedTrip = JSON.parse(jsonStr);
+    // 分享網址只顯示預覽；必須由使用者確認才會寫入自己的資料庫。
+    let pendingSharedTrip = null;
+    function parseSharedTrip(value) {
+      let raw = String(value || '').trim();
+      if (raw.includes('#share=')) raw = raw.split('#share=')[1];
+      else if (raw.includes('#s=')) raw = raw.split('#s=')[1];
+      else if (raw.startsWith('#')) throw new Error('不支援的分享連結');
+      const data = JSON.parse(decodeURIComponent(raw));
+      if (!data || typeof data !== 'object' || Array.isArray(data) ||
+          !data.destination || typeof data.destination !== 'string' ||
+          !data.itineraries || typeof data.itineraries !== 'object' || Array.isArray(data.itineraries)) {
+        throw new Error('分享資料格式不完整');
+      }
+      return data;
+    }
 
-          if (importedTrip && importedTrip.destination) {
-            if (!currentUser) {
-              currentUser = 'Guest';
-              localStorage.setItem('current_user', currentUser);
-            }
-            loadUserTrips();
+    function sharedFingerprint(trip) {
+      const clone = JSON.parse(JSON.stringify(trip));
+      delete clone.id;
+      delete clone.title;
+      delete clone._sharedFingerprint;
+      delete clone._sharedSourceId;
+      return JSON.stringify(clone);
+    }
 
-            importedTrip.id = 'trip_' + Date.now();
-            importedTrip.title = (importedTrip.destination || '好友') + '行程 (分享檔)';
+    function openSharePreview(trip) {
+      pendingSharedTrip = trip;
+      const existing = document.getElementById('share-preview-backdrop');
+      if (existing) existing.remove();
+      const backdrop = document.createElement('div');
+      backdrop.id = 'share-preview-backdrop';
+      backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(44,42,41,.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px';
+      const panel = document.createElement('div');
+      panel.style.cssText = 'background:white;border-radius:14px;padding:24px;width:100%;max-width:460px;max-height:85vh;overflow:auto';
+      const heading = document.createElement('h3');
+      heading.textContent = '📥 好友行程預覽';
+      const details = document.createElement('p');
+      details.style.cssText = 'margin:16px 0;white-space:pre-line;overflow-wrap:anywhere';
+      const count = Object.values(trip.itineraries).reduce((sum, day) => sum + (Array.isArray(day) ? day.length : 0), 0);
+      details.textContent = `名稱：${trip.title || trip.destination + '行程'}\n目的地：${trip.destination}\n天數：${trip.days || 1} 天\n行程項目：${count} 筆\n\n匯入後會建立獨立副本，不會修改好友的行程。`;
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap';
+      const cancel = document.createElement('button');
+      cancel.className = 'secondary';
+      cancel.textContent = '取消';
+      cancel.onclick = () => { backdrop.remove(); pendingSharedTrip = null; clearShareHash(); };
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = '確認匯入副本';
+      confirmBtn.onclick = confirmSharedTripImport;
+      actions.append(cancel, confirmBtn);
+      panel.append(heading, details, actions);
+      backdrop.append(panel);
+      document.body.append(backdrop);
+    }
 
-            tripsList.push(importedTrip);
-            saveUserTrips();
-            window.history.replaceState(null, null, window.location.pathname);
-            
-            alert('🎉 成功載入並同步好友分享的行程！');
-            initUserSession();
-            loadTripDetail(importedTrip.id);
-          }
-        } catch(e) {
-          console.log('網址讀取失敗');
-        }
+    function clearShareHash() {
+      if (location.hash.startsWith('#share=') || location.hash.startsWith('#s=')) {
+        history.replaceState(null, '', location.pathname + location.search);
       }
     }
 
-    function importTripByCode() {
-      const input = prompt('請貼上好友傳給您的行程分享網址：');
-      if (!input || !input.trim()) return;
-
-      try {
-        let rawData = input.trim();
-        if (rawData.includes('#share=')) rawData = rawData.split('#share=')[1];
-        else if (rawData.includes('#s=')) rawData = rawData.split('#s=')[1];
-
-        let jsonStr = decodeURIComponent(rawData);
-        const importedTrip = JSON.parse(jsonStr);
-        
-        if (importedTrip && importedTrip.destination) {
-          importedTrip.id = 'trip_' + Date.now();
-          importedTrip.title = (importedTrip.destination || '好友') + '行程 (匯入檔)';
-          
-          tripsList.push(importedTrip);
-          saveUserTrips();
-          renderFolderList();
-          alert('🎉 成功同步好友的行程！');
-        } else {
-          throw new Error('Invalid format');
-        }
-      } catch (err) {
-        alert('⚠️ 網址或分享碼格式無效，請確認是否完整複製！');
+    function confirmSharedTripImport() {
+      if (!pendingSharedTrip) return;
+      if (!currentUser) {
+        const username = prompt('請輸入要儲存行程的帳號名稱：', document.getElementById('username-input').value || 'Cassandra');
+        if (!username || !username.trim()) return;
+        currentUser = username.trim();
+        localStorage.setItem('current_user', currentUser);
       }
+      loadUserTrips();
+      const fingerprint = sharedFingerprint(pendingSharedTrip);
+      const duplicate = tripsList.some(t => t._sharedFingerprint === fingerprint ||
+        (t._sharedSourceId && t._sharedSourceId === pendingSharedTrip.id && sharedFingerprint(t) === fingerprint));
+      if (duplicate) {
+        alert('這份行程已匯入過，沒有重複新增。');
+        document.getElementById('share-preview-backdrop')?.remove();
+        pendingSharedTrip = null;
+        clearShareHash();
+        initUserSession();
+        return;
+      }
+      const copy = JSON.parse(JSON.stringify(pendingSharedTrip));
+      copy._sharedSourceId = copy.id || '';
+      copy._sharedFingerprint = fingerprint;
+      copy.id = 'trip_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      copy.title = (copy.title || copy.destination + '行程') + ' (好友副本)';
+      copy.luggage = copy.luggage && typeof copy.luggage === 'object' && !Array.isArray(copy.luggage) ? copy.luggage : {};
+      tripsList.push(copy);
+      try { saveUserTrips(); }
+      catch (err) { alert('儲存失敗，請檢查瀏覽器儲存空間。'); return; }
+      document.getElementById('share-preview-backdrop')?.remove();
+      pendingSharedTrip = null;
+      clearShareHash();
+      initUserSession();
+      loadTripDetail(copy.id);
+      alert('🎉 已成功匯入獨立副本！');
+    }
+
+    function checkUrlAutoImport() {
+      const hash = location.hash;
+      if (!hash.startsWith('#share=') && !hash.startsWith('#s=')) return;
+      try { openSharePreview(parseSharedTrip(hash)); }
+      catch (err) { alert('⚠️ 分享連結無效或資料不完整。'); clearShareHash(); }
+    }
+
+    function importTripByCode() {
+      const input = prompt('請貼上好友分享的行程網址或分享碼：');
+      if (!input || !input.trim()) return;
+      try { openSharePreview(parseSharedTrip(input)); }
+      catch (err) { alert('⚠️ 網址或分享碼格式無效，請確認完整複製。'); }
     }
 
     function toggleInternationalFields() {
