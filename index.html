@@ -339,10 +339,7 @@
     let currentTripId = localStorage.getItem('current_trip_id') || '';
     let currentDay = 1;
     let tripsList = [];
-    let currentTripData = {
-      id: '', title: '高雄三日遊', destination: '高雄', startDate: '', days: 3, brandTitle: 'TRAVEL JOURNAL',
-      isInternational: false, transportOutbound: '', transportInbound: '', luggage: {}, itineraries: {}
-    };
+    let currentTripData = null;
 
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('login-btn').onclick = handleLogin;
@@ -357,8 +354,10 @@
       document.getElementById('trip-start-date').oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
       document.getElementById('trip-days').oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
       document.getElementById('custom-brand-title').oninput = (e) => {
-        currentTripData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
-        saveCurrentTripData();
+        if (currentTripData) {
+          currentTripData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
+          saveCurrentTripData();
+        }
       };
       document.getElementById('is-international').onchange = () => { toggleInternationalFields(); saveCurrentTripData(); };
       document.getElementById('transport-outbound').oninput = saveCurrentTripData;
@@ -443,11 +442,14 @@
       document.getElementById('detail-screen').style.display = 'none';
       document.getElementById('folder-screen').style.display = 'block';
       document.getElementById('folder-user-display').innerText = currentUser;
+      currentTripId = '';
+      currentTripData = null;
       localStorage.removeItem('current_trip_id');
       renderFolderList();
     }
 
     function renderFolderList() {
+      loadUserTrips(); // 確保每次渲染都是最新資料
       const container = document.getElementById('trip-folder-container');
       if (!container) return;
       container.innerHTML = '';
@@ -496,16 +498,25 @@
     }
 
     function deleteTrip(id) {
+      loadUserTrips();
       if (tripsList.length <= 1) return alert('至少需保留一個行程！');
       if (!confirm('確定要刪除這個行程資料夾嗎？')) return;
+      
       tripsList = tripsList.filter(t => t.id !== id);
       saveUserTrips();
-      renderFolderList();
+      
+      if (currentTripId === id) {
+        showFolderScreen();
+      } else {
+        renderFolderList();
+      }
     }
 
     function loadTripDetail(id) {
+      loadUserTrips();
       const trip = tripsList.find(t => t.id === id);
       if (!trip) return;
+      
       currentTripId = id;
       localStorage.setItem('current_trip_id', currentTripId);
       currentTripData = JSON.parse(JSON.stringify(trip));
@@ -533,7 +544,7 @@
     }
 
     function saveCurrentTripData() {
-      if (!currentTripId) return;
+      if (!currentTripId || !currentTripData) return;
       currentTripData.destination = document.getElementById('trip-destination').value;
       currentTripData.title = currentTripData.destination ? `${currentTripData.destination}行程` : '未命名行程';
       currentTripData.startDate = document.getElementById('trip-start-date').value;
@@ -543,6 +554,7 @@
       currentTripData.transportOutbound = document.getElementById('transport-outbound').value;
       currentTripData.transportInbound = document.getElementById('transport-inbound').value;
 
+      loadUserTrips();
       const index = tripsList.findIndex(t => t.id === currentTripId);
       if (index !== -1) {
         tripsList[index] = JSON.parse(JSON.stringify(currentTripData));
@@ -701,15 +713,14 @@
       renderLuggageList();
     }
 
-    // 當前內部檢視的行程匯出分享（會先自動儲存目前畫面的最新編輯內容）
     function exportTripCode() {
-      saveCurrentTripData(); // 強制同步當前輸入框資料
-      shareSpecificTrip(currentTripId);
+      saveCurrentTripData();
+      if (currentTripId) {
+        shareSpecificTrip(currentTripId);
+      }
     }
 
-    // 庫存清單或內部檢視時，精準抓取指定 ID 的最新行程內容
     function shareSpecificTrip(tripId) {
-      // 先從 localStorage 重新載入最新清單，確保抓到最新編輯
       loadUserTrips();
       const targetTrip = tripsList.find(t => t.id === tripId);
       if (!targetTrip) return alert('找不到此行程資料！');
