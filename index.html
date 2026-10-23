@@ -115,11 +115,11 @@
 
     .action-icons-row { display: flex; align-items: center; gap: 6px; }
     .icon-action-btn { 
-      background: #ffffff; border: 1px solid var(--wabi-line); color: var(--wabi-ink); width: 32px; height: 32px; 
-      border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; text-decoration: none; transition: background 0.15s;
+      background: #ffffff; border: 1px solid var(--wabi-line); color: var(--wabi-ink) !important; width: 32px; height: 32px; 
+      border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; text-decoration: none !important; transition: background 0.15s;
     }
-    .icon-action-btn:hover { background: #f0ece3; border-color: var(--wabi-muted); }
-    .icon-action-btn.danger-icon { color: #a85a48; }
+    .icon-action-btn:hover { background: #f0ece3; border-color: var(--wabi-muted); color: var(--wabi-ink) !important; }
+    .icon-action-btn.danger-icon { color: #a85a48 !important; }
 
     .itinerary-content-box { 
       background: #ffffff; border: 1px solid var(--wabi-line); padding: 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;
@@ -243,7 +243,7 @@
       </div>
       <div class="card-body-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
-          <p style="font-size: 13px; color: var(--wabi-muted);">分類管理您的行李，僅保留大項目一鍵上下移動排序：</p>
+          <p style="font-size: 13px; color: var(--wabi-muted);">分類管理您的行李，支援大項目一鍵上下移動排序：</p>
           <button class="secondary" type="button" onclick="addLuggageCategory()" style="padding: 6px 14px; font-size: 13px;">＋ 新增行李大類別</button>
         </div>
         <div id="luggage-container"></div>
@@ -694,7 +694,6 @@
       renderLuggageList();
     }
 
-    // 採用您喜愛的簡潔寫法，同時完美結合完整行程資料
     function exportTripCode() {
       try {
         const jsonStr = JSON.stringify(currentTripData);
@@ -1057,6 +1056,7 @@
       }
 
       saveCurrentTripData();
+      closeManager(); // Fix scope if needed or close properly
       closeModal();
       renderItineraries();
     }
