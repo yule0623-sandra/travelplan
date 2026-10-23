@@ -447,7 +447,6 @@
       renderFolderList();
     }
 
-    // 庫存清單中的每個行程卡片現在都擁有專屬的「分享」按鈕
     function renderFolderList() {
       const container = document.getElementById('trip-folder-container');
       if (!container) return;
@@ -469,7 +468,6 @@
           loadTripDetail(trip.id);
         };
         
-        // 獨立分享該筆行程
         card.querySelector('.share-single-trip-btn').onclick = (e) => {
           e.stopPropagation();
           shareSpecificTrip(trip.id);
@@ -703,28 +701,16 @@
       renderLuggageList();
     }
 
-    // 當前正開啟的行程進行一鍵分享
+    // 當前內部檢視的行程匯出分享（會先自動儲存目前畫面的最新編輯內容）
     function exportTripCode() {
-      saveCurrentTripData(); // 確保最新變更已存入
-      try {
-        const jsonStr = JSON.stringify(currentTripData);
-        const encodedCode = encodeURIComponent(jsonStr);
-        const baseUrl = window.location.origin + window.location.pathname;
-        const shortUrl = `${baseUrl}#share=${encodedCode}`;
-
-        navigator.clipboard.writeText(shortUrl).then(() => {
-          alert("網址已成功複製!");
-        }).catch(err => {
-          console.error("複製失敗: ", err);
-          prompt("請手動複製以下分享網址：", shortUrl);
-        });
-      } catch (err) {
-        alert('匯出失敗！');
-      }
+      saveCurrentTripData(); // 強制同步當前輸入框資料
+      shareSpecificTrip(currentTripId);
     }
 
-    // 從庫存清單直接分享指定 ID 的行程
+    // 庫存清單或內部檢視時，精準抓取指定 ID 的最新行程內容
     function shareSpecificTrip(tripId) {
+      // 先從 localStorage 重新載入最新清單，確保抓到最新編輯
+      loadUserTrips();
       const targetTrip = tripsList.find(t => t.id === tripId);
       if (!targetTrip) return alert('找不到此行程資料！');
 
