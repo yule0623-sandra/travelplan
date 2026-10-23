@@ -53,6 +53,7 @@
       display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;
     }
     .card-header-toggle h3 { font-family: Georgia, serif; font-weight: normal; margin-bottom: 0; display: flex; align-items: center; gap: 8px; }
+    #trip-name:focus { outline: 2px solid var(--wabi-accent); outline-offset: 2px; background: #faf9f6 !important; }
     .toggle-arrow { font-size: 13px; color: var(--wabi-muted); font-weight: normal; white-space: nowrap; }
     .card.collapsed .card-body-content { display: none; }
     .card-body-content { margin-top: 16px; }
@@ -188,15 +189,11 @@
 
     <div class="card" id="card-basic-settings">
       <div class="card-header-toggle" onclick="toggleCardSection('card-basic-settings', this)">
-        <h3>🌍 旅程基本設定</h3>
+        <h3>🌍 <input type="text" id="trip-name" aria-label="行程名稱" placeholder="輸入行程名稱，例如：宜蘭三日遊" maxlength="120" onclick="event.stopPropagation()" style="width:min(55vw,340px)!important;max-width:100%;font-family:Georgia,serif;font-size:18px;font-weight:normal;background:transparent;border:1px solid transparent;border-bottom:1px solid var(--wabi-line);border-radius:0;padding:4px 6px;height:38px;" title="點此修改行程名稱"></h3>
         <span class="toggle-arrow">▼ 收合</span>
       </div>
       <div class="card-body-content">
         <div class="grid-2" style="margin-top: 10px;">
-          <div>
-            <label>旅遊地點 / 國家</label>
-            <input type="text" id="trip-destination" placeholder="例如：日本京都 或 高雄">
-          </div>
           <div>
             <label>出發日期</label>
             <input type="date" id="trip-start-date">
@@ -207,10 +204,6 @@
           <div>
             <label>旅遊天數設定 (天)</label>
             <input type="number" id="trip-days" min="1" value="3">
-          </div>
-          <div>
-            <label>頁面大標題 (英文/自訂)</label>
-            <input type="text" id="custom-brand-title" placeholder="例如：TRAVEL JOURNAL">
           </div>
         </div>
         
@@ -350,15 +343,9 @@
       document.getElementById('export-pdf-btn').onclick = () => window.print();
       document.getElementById('export-code-btn').onclick = exportTripCode;
 
-      document.getElementById('trip-destination').oninput = saveCurrentTripData;
+      document.getElementById('trip-name').oninput = saveCurrentTripData;
       document.getElementById('trip-start-date').oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
       document.getElementById('trip-days').oninput = () => { updateTripDaysConfig(); saveCurrentTripData(); };
-      document.getElementById('custom-brand-title').oninput = (e) => {
-        if (currentTripData) {
-          currentTripData.brandTitle = e.target.value || 'TRAVEL JOURNAL';
-          saveCurrentTripData();
-        }
-      };
       document.getElementById('is-international').onchange = () => { toggleInternationalFields(); saveCurrentTripData(); };
       document.getElementById('transport-outbound').oninput = saveCurrentTripData;
       document.getElementById('transport-inbound').oninput = saveCurrentTripData;
@@ -530,10 +517,9 @@
       document.getElementById('detail-screen').style.display = 'block';
       document.getElementById('detail-user-display').innerText = currentUser;
 
-      document.getElementById('trip-destination').value = currentTripData.destination || '';
+      document.getElementById('trip-name').value = currentTripData.title || currentTripData.destination || '未命名行程';
       document.getElementById('trip-start-date').value = currentTripData.startDate || '';
       document.getElementById('trip-days').value = currentTripData.days || 3;
-      document.getElementById('custom-brand-title').value = currentTripData.brandTitle || 'TRAVEL JOURNAL';
       document.getElementById('is-international').checked = !!currentTripData.isInternational;
       document.getElementById('transport-outbound').value = currentTripData.transportOutbound || '';
       document.getElementById('transport-inbound').value = currentTripData.transportInbound || '';
@@ -546,11 +532,15 @@
 
     function saveCurrentTripData() {
       if (!currentTripId || !currentTripData) return;
-      currentTripData.destination = document.getElementById('trip-destination').value;
-      currentTripData.title = currentTripData.destination ? `${currentTripData.destination}行程` : '未命名行程';
+      const enteredName = document.getElementById('trip-name').value.trim();
+      // 保留原有 destination 欄位，讓短網址、舊版分享與好友匯入繼續相容。
+      // 輸入途中若暫時清空，不會覆蓋原本已儲存的名稱。
+      if (enteredName) {
+        currentTripData.title = enteredName;
+        currentTripData.destination = enteredName;
+      }
       currentTripData.startDate = document.getElementById('trip-start-date').value;
       currentTripData.days = parseInt(document.getElementById('trip-days').value) || 3;
-      currentTripData.brandTitle = document.getElementById('custom-brand-title').value || 'TRAVEL JOURNAL';
       currentTripData.isInternational = document.getElementById('is-international').checked;
       currentTripData.transportOutbound = document.getElementById('transport-outbound').value;
       currentTripData.transportInbound = document.getElementById('transport-inbound').value;
