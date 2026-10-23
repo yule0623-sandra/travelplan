@@ -180,7 +180,7 @@
         <button class="secondary" id="back-to-folders-btn" type="button" style="padding: 6px 14px; font-size: 13px;">⬅️ 返回行程庫存</button>
         <div class="header-actions-group">
           <button class="secondary" id="export-pdf-btn" type="button" style="padding: 6px 12px; font-size: 12px;">📄 匯出 PDF</button>
-          <button class="accent-btn" id="export-code-btn" type="button" style="padding: 6px 12px; font-size: 12px;">📤 匯出短網址/分享碼</button>
+          <button class="accent-btn" id="export-code-btn" type="button" style="padding: 6px 12px; font-size: 12px;">📤 分享行程短網址</button>
           <span class="user-badge" id="detail-user-display">使用者</span>
         </div>
       </div>
@@ -734,23 +734,66 @@
       return 'gz=' + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
     }
 
+    // 雲端短網址：儲存行程至 Cloudflare Pages Functions + KV。
+    // 若雲端 API 無法使用，保留既有 gzip 分享網址作為備援。
     async function shareSpecificTrip(tripId) {
+      if (currentTripId === tripId && currentTripData) saveCurrentTripData();
       loadUserTrips();
       const trip = tripsList.find(t => t.id === tripId);
       if (!trip) return alert('找不到此行程資料！');
+      let url;
+      let fallback = false;
       try {
-        const code = await encodeTripForShare(trip);
-        const url = location.origin + location.pathname + '#' + code;
-        try {
-          await navigator.clipboard.writeText(url);
-          alert('「' + trip.title + '」分享網址已複製！');
-        } catch (_) {
-          prompt('請完整複製以下分享網址：', url);
+        const response = await fetch('/api/shares', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(trip)
+        });
+        const result = await response.json();
+        if (!response.ok || !/^[a-f0-9]{24}$/.test(result.id || '')) {
+          throw new Error(result.error || '短網址服務回應異常');
         }
+        url = location.origin + location.pathname + '#s=' + result.id;
       } catch (err) {
-        console.error('分享失敗', err);
-        alert('無法產生分享網址：' + err.message);
+        console.warn('短網址服務暫時無法使用，改用壓縮分享連結', err);
+        try {
+          url = location.origin + location.pathname + '#' + await encodeTripForShare(trip);
+          fallback = true;
+        } catch (fallbackError) {
+          alert('無法產生分享網址：' + fallbackError.message);
+          return;
+        }
       }
+      const message = fallback
+        ? '雲端短網址暫時無法使用，已改用原本的壓縮分享連結。\n'
+        : '雲端短網址已建立（未設定自動到期日）。\n';
+      try {
+        await navigator.clipboard.writeText(url);
+        alert(message + '「' + trip.title + '」分享網址已複製！');
+      } catch (_) {
+        prompt(message + '請完整複製以下分享網址：', url);
+      }
+    }
+
+    async function fetchShortSharedTrip(id) {
+      if (!/^[a-f0-9]{24}$/.test(id)) throw new Error('短網址代碼格式不正確');
+      const response = await fetch('/api/shares?id=' + encodeURIComponent(id), {
+        headers: { 'Accept': 'application/json' }
+      });
+      let data;
+      try { data = await response.json(); }
+      catch (_) { throw new Error('短網址服務未正確回應，請確認 Pages Functions 已部署'); }
+      if (!response.ok) throw new Error(data.error || '無法取得分享行程');
+      return validateSharedTrip(data);
+    }
+
+    function validateSharedTrip(data) {
+      if (!data || typeof data !== 'object' || Array.isArray(data) ||
+          !data.destination || typeof data.destination !== 'string' ||
+          !data.itineraries || typeof data.itineraries !== 'object' || Array.isArray(data.itineraries)) {
+        throw new Error('分享資料格式不完整');
+      }
+      return data;
     }
 
     let pendingSharedTrip = null;
@@ -761,7 +804,7 @@
       let compressed = false;
       if (raw.startsWith('gz=')) { compressed = true; raw = raw.slice(3); }
       else if (raw.startsWith('share=')) raw = raw.slice(6);
-      else if (raw.startsWith('s=')) raw = raw.slice(2);
+      else if (raw.startsWith('s=')) return await fetchShortSharedTrip(raw.slice(2));
       else if (raw.startsWith('#') || raw.includes('://')) throw new Error('不支援的分享連結');
       let json;
       if (compressed) {
@@ -776,13 +819,7 @@
         try { json = decodeURIComponent(raw); }
         catch (_) { json = raw; }
       }
-      const data = JSON.parse(json);
-      if (!data || typeof data !== 'object' || Array.isArray(data) ||
-          !data.destination || typeof data.destination !== 'string' ||
-          !data.itineraries || typeof data.itineraries !== 'object' || Array.isArray(data.itineraries)) {
-        throw new Error('分享資料格式不完整');
-      }
-      return data;
+      return validateSharedTrip(JSON.parse(json));
     }
 
     function sharedFingerprint(trip) {
