@@ -61,7 +61,6 @@
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px; align-items: flex-end; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--wabi-muted); letter-spacing: 0.5px; }
     
-    /* 修正 iOS Safari 日期選擇器寬度與外觀 */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
       width: 100% !important; 
       max-width: 100% !important;
@@ -95,9 +94,9 @@
     button.accent-btn:hover { background: #9e644b; }
 
     .luggage-category-box { background: #faf9f6; border: 1px solid var(--wabi-line); padding: 16px; border-radius: 12px; margin-bottom: 14px; }
-    .luggage-cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .luggage-cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
     .luggage-items-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-    .luggage-item-row { display: flex; align-items: center; gap: 10px; background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--wabi-line); }
+    .luggage-item-row { display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--wabi-line); }
     .luggage-item-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--wabi-primary); cursor: pointer; }
     .luggage-item-row span.checked { text-decoration: line-through; color: var(--wabi-muted); }
 
@@ -245,7 +244,7 @@
       </div>
       <div class="card-body-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
-          <p style="font-size: 13px; color: var(--wabi-muted);">分類管理您的行李，勾選已準備好的項目：</p>
+          <p style="font-size: 13px; color: var(--wabi-muted);">分類管理您的行李，支援大類別與小項目上下排序：</p>
           <button class="secondary" type="button" onclick="addLuggageCategory()" style="padding: 6px 14px; font-size: 13px;">＋ 新增行李大類別</button>
         </div>
         <div id="luggage-container"></div>
@@ -295,8 +294,8 @@
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label>地點名稱（若非地點如出門/起床將自動隱藏導航）</label>
-        <input type="text" id="item-title" placeholder="例如：清水寺、老爹蔬食、羅東夜市">
+        <label>地點名稱（若輸入空白或提醒詞彙將隱藏導航）</label>
+        <input type="text" id="item-title" placeholder="例如：清水寺、老爹蔬食、羅東夜市 (或留白)">
       </div>
 
       <div style="margin-bottom: 12px;">
@@ -558,7 +557,7 @@
         return;
       }
 
-      categories.forEach((catName) => {
+      categories.forEach((catName, catIdx) => {
         const catBox = document.createElement('div');
         catBox.className = 'luggage-category-box';
 
@@ -574,8 +573,10 @@
             <div class="luggage-item-row">
               <input type="checkbox" ${isChecked} onchange="toggleLuggageItem('${catName}', ${idx}, this.checked)">
               <span class="${lineClass}" style="flex: 1; font-size: 14px;">${itemName}</span>
-              <button class="secondary" type="button" onclick="editLuggageItem('${catName}', ${idx})" style="padding: 2px 8px; font-size: 11px;">✏️</button>
-              <button class="secondary delete-btn" type="button" onclick="deleteLuggageItem('${catName}', ${idx})" style="padding: 2px 8px; font-size: 11px; background: #e8dfd8;">🗑️</button>
+              <button class="icon-action-btn" type="button" onclick="moveLuggageItem('${catName}', ${idx}, -1)" title="項目往上移" style="width:26px; height:26px; font-size:11px;">⬆️</button>
+              <button class="icon-action-btn" type="button" onclick="moveLuggageItem('${catName}', ${idx}, 1)" title="項目往下移" style="width:26px; height:26px; font-size:11px;">⬇️</button>
+              <button class="secondary" type="button" onclick="editLuggageItem('${catName}', ${idx})" style="padding: 2px 6px; font-size: 11px;">✏️</button>
+              <button class="secondary delete-btn" type="button" onclick="deleteLuggageItem('${catName}', ${idx})" style="padding: 2px 6px; font-size: 11px; background: #e8dfd8;">🗑️</button>
             </div>
           `;
         });
@@ -583,10 +584,12 @@
         catBox.innerHTML = `
           <div class="luggage-cat-header">
             <h4 style="font-family: Georgia, serif; font-size: 15px; color: var(--wabi-primary);">📌 ${catName}</h4>
-            <div style="display: flex; gap: 6px;">
-              <button class="secondary" type="button" onclick="addLuggageItem('${catName}')" style="padding: 4px 10px; font-size: 12px;">＋ 新增項目</button>
-              <button class="secondary" type="button" onclick="renameLuggageCategory('${catName}')" style="padding: 4px 8px; font-size: 12px;">✏️</button>
-              <button class="secondary" type="button" onclick="deleteLuggageCategory('${catName}')" style="padding: 4px 8px; font-size: 12px; background: #e8dfd8;">🗑️</button>
+            <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+              <button class="icon-action-btn" type="button" onclick="moveLuggageCategory(${catIdx}, -1)" title="大類別往上移" style="width:26px; height:26px; font-size:11px;">⬆️</button>
+              <button class="icon-action-btn" type="button" onclick="moveLuggageCategory(${catIdx}, 1)" title="大類別往下移" style="width:26px; height:26px; font-size:11px;">⬇️</button>
+              <button class="secondary" type="button" onclick="addLuggageItem('${catName}')" style="padding: 4px 8px; font-size: 12px;">＋ 項目</button>
+              <button class="secondary" type="button" onclick="renameLuggageCategory('${catName}')" style="padding: 4px 6px; font-size: 12px;">✏️</button>
+              <button class="secondary" type="button" onclick="deleteLuggageCategory('${catName}')" style="padding: 4px 6px; font-size: 12px; background: #e8dfd8;">🗑️</button>
             </div>
           </div>
           <div class="luggage-items-list">
@@ -595,6 +598,38 @@
         `;
         container.appendChild(catBox);
       });
+    }
+
+    function moveLuggageCategory(index, direction) {
+      const categories = Object.keys(currentTripData.luggage);
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= categories.length) return;
+
+      const newLuggage = {};
+      const movedKey = categories[index];
+      categories.splice(index, 1);
+      categories.splice(targetIndex, 0, movedKey);
+
+      categories.forEach(k => {
+        newLuggage[k] = currentTripData.luggage[k];
+      });
+
+      currentTripData.luggage = newLuggage;
+      saveCurrentTripData();
+      renderLuggageList();
+    }
+
+    function moveLuggageItem(catName, index, direction) {
+      const items = currentTripData.luggage[catName];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= items.length) return;
+
+      const temp = items[index];
+      items[index] = items[targetIndex];
+      items[targetIndex] = temp;
+
+      saveCurrentTripData();
+      renderLuggageList();
     }
 
     function addLuggageCategory() {
@@ -614,8 +649,15 @@
       const name = newName.trim();
       if (currentTripData.luggage[name]) return alert('此類別名稱已存在！');
 
-      currentTripData.luggage[name] = currentTripData.luggage[oldName];
-      delete currentTripData.luggage[oldName];
+      const newLuggage = {};
+      for (let k in currentTripData.luggage) {
+        if (k === oldName) {
+          newLuggage[name] = currentTripData.luggage[oldName];
+        } else {
+          newLuggage[k] = currentTripData.luggage[k];
+        }
+      }
+      currentTripData.luggage = newLuggage;
       saveCurrentTripData();
       renderLuggageList();
     }
@@ -677,7 +719,7 @@
 
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(shareUrl).then(() => {
-            alert('✨ 行程分享短網址已自動複製到剪貼簿！\n您可以直接貼上發送給好友，點開即可自動匯入。');
+            alert('✨ 行程分享短網址已成功複製到剪貼簿！\n您可以直接貼上發送給好友，點開即可自動匯入。');
           }).catch(() => {
             prompt('請複製以下精簡分享網址傳給好友：', shareUrl);
           });
@@ -813,7 +855,6 @@
         return;
       }
 
-      // 非地點詞彙自動判斷清單
       const nonLocationKeywords = ['出發', '起床', '出門', '集合', '解散', '賦歸', '休息', '自由活動', '搭車', '回飯店'];
 
       filtered.forEach((item) => {
@@ -823,18 +864,14 @@
         
         const titleText = (item.title || '').trim();
         const hasAddress = !!(item.address && item.address.trim());
-        
-        // 判斷是否為非地點詞彙
         const isNonLocation = nonLocationKeywords.some(kw => titleText.includes(kw));
 
-        // 只有當「有填寫詳細地址」或「標題不是非地點詞彙且不為空」時，才啟動地點導航
-        const shouldShowNav = hasAddress || (!isNonLocation && titleText !== '');
+        const shouldShowNav = titleText !== '' && titleText !== ' ' && hasAddress || (!isNonLocation && titleText !== '' && titleText !== ' ');
 
         const mapSearchQuery = hasAddress ? item.address : titleText;
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchQuery)}`;
 
         const displayHours = item.hours ? item.hours : '';
-        const displayAddress = item.address ? item.address : '';
         const hasContent = item.desc || displayHours !== '' || shouldShowNav || item.recommend || item.memo;
 
         div.innerHTML = `
@@ -857,7 +894,7 @@
               
               <div class="location-info-meta">
                 ${displayHours ? `<span>⏱ 營業時間：${displayHours}</span>` : ''}
-                ${shouldShowNav ? `<span>📍 地點導航：<a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">${displayAddress || titleText} (點擊一鍵導航)</a></span>` : ''}
+                ${shouldShowNav ? `<span><a href="${mapUrl}" target="_blank" class="map-nav-link" title="點擊一鍵導航">📍導航點我</a></span>` : ''}
               </div>
 
               ${item.recommend ? `<div class="recommend-badge">✨ 推薦必吃/必買：${item.recommend}</div>` : ''}
